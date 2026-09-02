@@ -40,7 +40,7 @@ const parens = (...rule) => seq('(', ...rule, ')');
 //
 
 module.exports = grammar({
-  name: "TSQL",
+  name: "tsql",
 
   conflicts: $ => [
     [$.batch]
