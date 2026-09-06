@@ -253,6 +253,10 @@
       "required": true,
       "types": [
         {
+          "type": "declare_statement",
+          "named": true
+        },
+        {
           "type": "execute_statement",
           "named": true
         }
@@ -1114,6 +1118,44 @@
     "type": "decimal_",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "declare_local",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "data_type",
+          "named": true
+        },
+        {
+          "type": "expression",
+          "named": true
+        },
+        {
+          "type": "table_name",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "declare_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "declare_local",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "dml_clause",
@@ -2590,6 +2632,7 @@
   {
     "type": "tsql_file",
     "named": true,
+    "root": true,
     "fields": {},
     "children": {
       "multiple": true,
@@ -3024,10 +3067,6 @@
   },
   {
     "type": "dollar_partition_",
-    "named": true
-  },
-  {
-    "type": "dummy",
     "named": true
   },
   {

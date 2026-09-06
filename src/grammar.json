@@ -1,4 +1,5 @@
 {
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/grammar.schema.json",
   "name": "tsql",
   "rules": {
     "tsql_file": {
@@ -458,7 +459,7 @@
             "type": "TOKEN",
             "content": {
               "type": "PATTERN",
-              "value": "@[A-Za-z_$@#0-9]+"
+              "value": "@[a-zA-Z0-9_$@#\\uFF01-\\uFF5E]+"
             }
           }
         },
@@ -533,7 +534,7 @@
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
-        "value": "@[A-Za-z_$@#0-9]+"
+        "value": "@[a-zA-Z0-9_$@#\\uFF01-\\uFF5E]+"
       }
     },
     "OUTPUT": {
@@ -660,6 +661,10 @@
     "another_statement": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "declare_statement"
+        },
         {
           "type": "SYMBOL",
           "name": "execute_statement"
@@ -1296,6 +1301,112 @@
             {
               "type": "SYMBOL",
               "name": "groupby"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "declare_statement": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "TOKEN",
+              "content": {
+                "type": "PATTERN",
+                "value": "DECLARE",
+                "flags": "i"
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "declare_local"
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "TOKEN",
+                    "content": {
+                      "type": "STRING",
+                      "value": ","
+                    }
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declare_local"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "declare_local": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "TOKEN",
+          "content": {
+            "type": "PATTERN",
+            "value": "@[a-zA-Z0-9_$@#\\uFF01-\\uFF5E]+"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "TOKEN",
+              "content": {
+                "type": "PATTERN",
+                "value": "AS",
+                "flags": "i"
+              }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "data_type"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "table_name"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "TOKEN",
+                  "content": {
+                    "type": "STRING",
+                    "value": "="
+                  }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "expression"
+                }
+              ]
             },
             {
               "type": "BLANK"
@@ -7398,7 +7509,7 @@
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
-        "value": "@[A-Za-z_$@#0-9]+"
+        "value": "@[a-zA-Z0-9_$@#\\uFF01-\\uFF5E]+"
       }
     },
     "seperator": {
@@ -8280,5 +8391,6 @@
   ],
   "externals": [],
   "inline": [],
-  "supertypes": []
+  "supertypes": [],
+  "reserved": {}
 }

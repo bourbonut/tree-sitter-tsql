@@ -21,7 +21,7 @@ const SEMI = token(';');
 //FULLWIDTH handling?
 const ID                = token(/[A-Za-z_#][A-Za-z_#$@0-9]+/);
 const SQUARE_BRACKET_ID = token(/\[[A-Za-z_#]+\]/);
-const LOCAL_ID          = token(/@[A-Za-z_$@#0-9]+/);
+const LOCAL_ID          = token(/@[a-zA-Z0-9_$@#\uFF01-\uFF5E]+/);
 const INT               = token(/[0-9]+/);
 const DOT               = token(/\./);
 const STRING            = token(/N?'([^']|'')*'/);
@@ -29,6 +29,8 @@ const DECIMAL           = token(/[0-9]+/);
 const DOUBLE_COLON      = token('::');
 const DEC_DOT_DEC       = token(/([0-9]+\.[0-9]+|[0-9]+\.|\.?[0-9]+)/);
 const COMMA             = token(',');
+
+const EQUAL             = token('=');
 
 //
 // UTILS
@@ -130,8 +132,8 @@ module.exports = grammar({
     ),
 
     another_statement: $ => choice(
-
       //TODO https://github.com/antlr/grammars-v4/blob/master/sql/tsql/TSqlParser.g4#L350
+      $.declare_statement,
       $.execute_statement
     ),
 
@@ -223,6 +225,47 @@ module.exports = grammar({
       ,optional(seq(token(/FROM/i), $.table_sources))
       ,optional($.groupby)
       //TODO https://github.com/antlr/grammars-v4/blob/master/sql/tsql/TSqlParser.g4#L4010-L4023
+    ),
+
+    declare_statement: $ => choice(
+      seq(
+        token(/DECLARE/i),
+        $.declare_local,
+        repeat(seq(COMMA, $.declare_local))
+      ),
+
+      // seq(
+      //   token(/DECLARE/i),
+      //   LOCAL_ID,
+      //   optional(token(/AS/i)),
+      //   $.table_type_definition
+      // ),
+
+      // seq(
+      //   token(/DECLARE/i),
+      //   LOCAL_ID,
+      //   optional(token(/AS/i)),
+      //   $.xml_type_definition
+      // ),
+      //
+      // seq(
+      //   token(/WITH/i),
+      //   token(/XMLNAMESPACES/i),
+      //   '(',
+      //   $.xml_declaration,
+      //   repeat(seq($.comma, $.xml_declaration)),
+      //   ')'
+      // )
+    ),
+
+    declare_local: $ => seq(
+      LOCAL_ID,
+      optional(token(/AS/i)),
+      choice(
+        $.data_type,
+        $.table_name
+      ),
+      optional(seq(EQUAL, $.expression))
     ),
 
     select: $ => token(/SELECT/i),
