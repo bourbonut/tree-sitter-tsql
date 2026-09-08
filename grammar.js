@@ -1271,7 +1271,7 @@ module.exports = grammar({
   // // For spaces, tabulations and line breaks
   // extras: $ => [
   //   /[\s\uFEFF\xA0]/, // \s couvre [ \t\r\n\f]
-  //   $.comment        // Si vous avez aussi une règle pour les commentaires à ignorer
+  //   $.comment
   // ],
 
   ...precedences,
