@@ -1637,15 +1637,15 @@ module.exports = grammar({
       ,$.conversion_functions
     ),
 
-    ...built_in_functions,
-    ...odbc_scalar_functions,
-    ...aggregate_window_functions,
-    ...analytic_windowed_functions,
-    ...bit_manipulation_functions,
-    ...collation_functions,
-    ...configuration_functions,
-    ...conversion_functions,
-    ...data_type,
+    // ...built_in_functions,
+    // ...odbc_scalar_functions,
+    // ...aggregate_window_functions,
+    // ...analytic_windowed_functions,
+    // ...bit_manipulation_functions,
+    // ...collation_functions,
+    // ...configuration_functions,
+    // ...conversion_functions,
+    // ...data_type,
 
     //https://learn.microsoft.com/en-us/sql/t-sql/data-types/hierarchyid-data-type-method-reference?view=sql-server-ver16
     hierarchyid_static_method: $ => choice(
@@ -1826,29 +1826,79 @@ module.exports = grammar({
       ,optional(choice(token('+'),token('-')))
       ,token(/[0-9]+/)),
 
-    float_: $ => DEC_DOT_DEC,
-    decimal_: $ => DECIMAL,
-
-    //
-    // HELPERS
-    //
-
-    //https://msdn.microsoft.com/en-us/library/ms175874.aspx
-    // id_: $ => choice(
-    //   ID
-    //   ,SQUARE_BRACKET_ID
-    //   ,$.keyword
-    //   //TODO https://github.com/antlr/grammars-v4/blob/master/sql/tsql/TSqlParser.g4#L6261
-    // ),
-
-    //TODO https://github.com/antlr/grammars-v4/blob/master/sql/tsql/TSqlParser.g4#L5287
-    // keyword: $ => choice(
-    //   token(/GO/i)
-    // ),
-
-    integer: $ => DECIMAL,
-
     placeholder: $ => alias('TODO', $.dummy),
+
+    // MARKER
+
+    data_type: $ => choice(
+      seq(
+        field('scaled', choice(
+          VARCHAR,
+          NVARCHAR,
+          BINARY,
+          VARBINARY_KEYWORD,
+          SQUARE_BRACKET_ID
+        )),
+        '(',
+        token(/MAX/i),
+        ')'
+      ),
+      seq(
+        field('ext_type', $.id_),
+        '(',
+        field('scale', DECIMAL),
+        ',',
+        field('prec', DECIMAL),
+        ')'
+      ),
+      seq(
+        field('ext_type', $.id_),
+        '(',
+        field('scale', DECIMAL),
+        ')'
+      ),
+      seq(
+        field('ext_type', $.id_),
+        IDENTITY,
+        optional(seq(
+          '(',
+          field('seed', DECIMAL),
+          ',',
+          field('inc', DECIMAL),
+          ')'
+        ))
+      ),
+      seq(
+        DOUBLE,
+        optional(PRECISION)
+      ),
+
+      field('unscaled_type', $.id_)
+    ),
+
+    constant: $ => choice(
+      STRING,
+      BINARY,
+      seq(optional('-'), choice(DECIMAL, REAL, FLOAT)),
+      seq(optional('-'), seq(
+        field("dollar", DOLLAR),
+        optional(choice(PLUS, MINUS)),
+        choice(DECIMAL, FLOAT)
+      )),
+      $.parameter
+    ),
+
+    primitive_constant: $ => choice(
+      STRING,
+      BINARY,
+      choice(DECIMAL, REAL, FLOAT),
+      seq(
+        field("dollar", DOLLAR),
+        optional(choice(PLUS, MINUS)),
+        choice(DECIMAL, FLOAT)
+      ),
+      $.parameter
+    ),
 
     keyword: $ => choice(
       ABORT,
@@ -1884,16 +1934,16 @@ module.exports = grammar({
       ANSI_NULLS,
       ANSI_PADDING,
       ANSI_WARNINGS,
-      // APP_NAME,
+      APP_NAME,
       APPLICATION_LOG,
-      // APPLOCK_MODE,
-      // APPLOCK_TEST,
+      APPLOCK_MODE,
+      APPLOCK_TEST,
       APPLY,
       ARITHABORT,
       ARITHIGNORE,
       ASCII,
       ASSEMBLY,
-      // ASSEMBLYPROPERTY,
+      ASSEMBLYPROPERTY,
       AT_KEYWORD,
       AUDIT,
       AUDIT_GUID,
@@ -1946,12 +1996,12 @@ module.exports = grammar({
       CLEANTABLE,
       CLEANUP,
       CLONEDATABASE,
-      // COL_LENGTH,
-      // COL_NAME,
+      COL_LENGTH,
+      COL_NAME,
       COLLECTION,
       COLUMN_ENCRYPTION_KEY,
       COLUMN_MASTER_KEY,
-      // COLUMNPROPERTY,
+      COLUMNPROPERTY,
       COLUMNS,
       COLUMNSTORE,
       COLUMNSTORE_ARCHIVE,
@@ -2823,6 +2873,7 @@ module.exports = grammar({
       FILESTREAM_ON,
     ),
 
+    // https://msdn.microsoft.com/en-us/library/ms175874.aspx
     id_: $ => choice(
       ID,
       TEMP_ID,
@@ -2837,6 +2888,8 @@ module.exports = grammar({
 
     id_or_string: $ => choice($.id_, STRING),
 
+    // https://msdn.microsoft.com/en-us/library/ms188074.aspx
+    // Spaces are allowed for comparison operators.
     comparison_operator: $ => choice(
       '=',
       '>',
