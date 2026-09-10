@@ -1830,6 +1830,235 @@ module.exports = grammar({
 
     // MARKER
 
+    insert_column_name_list: $ => seq(
+      field("col", $.insert_column_id),
+      repeat(
+        seq(
+          ",",
+          field("col", $.insert_column_id)
+        )
+      )
+    ),
+
+    insert_column_id: $ => seq(
+      repeat(
+        seq(
+          field("ignore", optional($.id_)),
+          "."
+        )
+      ),
+      $.id_
+    ),
+
+    column_name_list: $ => seq(
+      field("col", $.id_),
+      repeat(
+        seq(
+          ",",
+          field("col", $.id_)
+        )
+      )
+    ),
+
+    cursor_name: $ => choice(
+      $.id_,
+      LOCAL_ID
+    ),
+
+    on_off: $ => choice(
+      ON,
+      OFF
+    ),
+
+    clustered: $ => choice(
+      CLUSTERED,
+      NONCLUSTERED
+    ),
+
+    null_notnull: $ => seq(
+      optional(NOT),
+      NULL_
+    ),
+
+    scalar_function_name: $ => choice(
+      $.func_proc_name_server_database_schema,
+      RIGHT,
+      LEFT,
+      BINARY_CHECKSUM,
+      CHECKSUM
+    ),
+
+    begin_conversation_timer: $ => seq(
+      BEGIN,
+      CONVERSATION,
+      TIMER,
+      "(",
+      LOCAL_ID,
+      ")",
+      TIMEOUT,
+      "=",
+      $.time,
+      optional(";")
+    ),
+
+    begin_conversation_dialog: $ => seq(
+      BEGIN,
+      DIALOG,
+      optional(CONVERSATION),
+      field("dialog_handle", LOCAL_ID),
+      FROM,
+      SERVICE,
+      field("initiator_service_name", $.service_name),
+      TO,
+      SERVICE,
+      field("target_service_name", $.service_name),
+      optional(
+        seq(
+          ",",
+          field("service_broker_guid", STRING)
+        )
+      ),
+      ON,
+      CONTRACT,
+      field("contract_name", $.contract_name),
+      optional(
+        seq(
+          WITH,
+          optional(
+            seq(
+              choice(
+                RELATED_CONVERSATION,
+                RELATED_CONVERSATION_GROUP
+              ),
+              "=",
+              LOCAL_ID,
+              optional(",")
+            )
+          ),
+          optional(
+            seq(
+              LIFETIME,
+              "=",
+              choice(
+                DECIMAL,
+                LOCAL_ID
+              ),
+              optional(",")
+            )
+          ),
+          optional(
+            seq(
+              ENCRYPTION,
+              "=",
+              $.on_off
+            )
+          )
+        )
+      ),
+      optional(";")
+    ),
+
+    contract_name: $ => choice(
+      $.id_,
+      $.expression
+    ),
+
+    service_name: $ => choice(
+      $.id_,
+      $.expression
+    ),
+
+    end_conversation: $ => seq(
+      END,
+      CONVERSATION,
+      field("conversation_handle", LOCAL_ID),
+      optional(";"),
+      optional(
+        seq(
+          WITH,
+          optional(
+            seq(
+              ERROR,
+              "=",
+              field(
+                "failure_code",
+                choice(LOCAL_ID, STRING)
+              ),
+              DESCRIPTION,
+              "=",
+              field(
+                "failure_text",
+                choice(LOCAL_ID, STRING)
+              )
+            )
+          ),
+          optional(CLEANUP)
+        )
+      )
+    ),
+
+    waitfor_conversation: $ => seq(
+      optional(WAITFOR),
+      "(",
+      $.get_conversation,
+      ")",
+      optional(
+        seq(
+          optional(","),
+          TIMEOUT,
+          field("timeout", $.time)
+        )
+      ),
+      optional(";")
+    ),
+
+    get_conversation: $ => seq(
+      GET,
+      CONVERSATION,
+      GROUP,
+      field(
+        "conversation_group_id",
+        choice(STRING, LOCAL_ID)
+      ),
+      FROM,
+      field("queue", $.queue_id),
+      optional(";")
+    ),
+
+    queue_id: $ => choice(
+      choice(
+        seq(
+          field("database_name", $.id_),
+          '.',
+          field("schema_name", $.id_),
+          '.',
+          field("name", $.id_)
+        ),
+        $.id_
+      )
+    ),
+
+    send_conversation: $ => seq(
+      SEND,
+      ON,
+      CONVERSATION,
+      field("conversation_handle", choice(STRING, LOCAL_ID)),
+      MESSAGE,
+      TYPE,
+      field("message_type_name", $.expression),
+      optional(
+        seq(
+          "(",
+            field(
+              "message_body_expression",
+              choice(STRING, LOCAL_ID)
+            ),
+            ")"
+        )
+      ),
+      optional(";")
+    ),
+
     data_type: $ => choice(
       seq(
         field('scaled', choice(
