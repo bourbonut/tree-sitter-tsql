@@ -1830,6 +1830,1122 @@ module.exports = grammar({
 
     // MARKER
 
+    table_source_item: $ => choice(
+      seq($.full_table_name, $.deprecated_table_hint, $.as_table_alias), // this is currently allowed
+      seq(
+        $.full_table_name,
+        optional($.as_table_alias),
+        optional(choice($.with_table_hints, $.deprecated_table_hint, $.sybase_legacy_hints))
+      ),
+      seq($.rowset_function, optional($.as_table_alias)),
+      seq('(', $.derived_table, ')', optional(seq($.as_table_alias, optional($.column_alias_list)))),
+      seq($.change_table, optional($.as_table_alias)),
+      seq($.nodes_method, optional($.as_table_alias, optional(column_alias_list))),
+      seq($.function_call, optional($.as_table_alias, optional(column_alias_list))),
+      seq(field("loc_id", LOCAL_ID), optional($.as_table_alias)),
+      seq(field("loc_id_call", LOCAL_ID), '.', field("loc_fcall", $.function_call), optional(seq($.as_table_alias, optional($.column_alias_list)))),
+      $.open_xml,
+      $.open_json,
+      seq(DOUBLE_COLON, field("oldstyle_fcall", $.function_call), optional($.as_table_alias)), // Build-in function (old syntax)
+      seq('(', $.table_source, ')'),
+    ),
+
+    open_xml: $ => seq(
+      OPENXML,
+      '(',
+      $.expression,
+      ',',
+      $.expression,
+      optional(seq(',', $.expression)),
+      ')',
+      optional(seq(
+        WITH,
+        '(',
+        $.schema_declaration,
+        ')'
+      )),
+      optional($.as_table_alias)
+    ),
+
+    open_json: $ => seq(
+      OPENJSON,
+      '(',
+      $.expression,
+      optional(seq(',', $.expression)),
+      ')',
+      optional(seq(
+        WITH,
+        '(',
+        $.json_declaration,
+        ')'
+      )),
+      optional($.as_table_alias)
+    ),
+
+    json_declaration: $ => seq(
+      field("json_col", $.json_column_declaration),
+      repeat(seq(',', field("json_col", $.json_column_declaration)))
+    ),
+
+    json_column_declaration: $ => seq(
+      $.column_declaration,
+      optional(seq(AS, JSON))
+    ),
+
+    schema_declaration: $ => seq(
+      field("xml_col", $.column_declaration),
+      repeat(seq(',', field("xml_col", $.column_declaration)))
+    ),
+
+    column_declaration: $ => seq(
+      $.id_,
+      $.data_type,
+      optional(STRING)
+    ),
+
+    change_table: $ => choice(
+      $.change_table_changes,
+      $.change_table_version
+    ),
+
+    change_table_changes: $ => seq(
+      CHANGETABLE,
+      '(',
+      CHANGES,
+      field("changetable", $.table_name),
+      ',',
+      field("changesid", choice(NULL_, DECIMAL, LOCAL_ID)),
+      ')'
+    ),
+
+    change_table_version: $ => seq(
+      CHANGETABLE,
+      '(',
+      VERSION,
+      field("versiontable", $.table_name),
+      ',',
+      field("pk_columns", $.full_column_name_list),
+      ',',
+      field("pk_values", $.select_list),
+      ')'
+    ),
+
+    // https://msdn.microsoft.com/en-us/library/ms191472.aspx
+    join_part: $ => choice(
+      $.join_on,
+      $.cross_join,
+      $.apply_,
+      $.pivot,
+      $.unpivot
+    ),
+
+    join_on: $ => seq(
+      optional(choice(
+        field("inner", INNER),
+        seq(
+          field("join_type", choice(LEFT, RIGHT, FULL)),
+          optional(field("outer", OUTER))
+        )
+      )),
+      optional(field("join_hint", choice(LOOP, HASH, MERGE, REMOTE))),
+      JOIN,
+      field("source", $.table_source),
+      ON,
+      field("cond", $.search_condition)
+    ),
+
+    cross_join: $ => seq(
+      CROSS,
+      JOIN,
+      $.table_source_item
+    ),
+
+    apply_: $ => seq(
+      field("apply_style", choice(CROSS, OUTER)),
+      APPLY,
+      field("source", $.table_source_item)
+    ),
+
+    pivot: $ => seq(
+      PIVOT,
+      $.pivot_clause,
+      optional($.as_table_alias)
+    ),
+
+    unpivot: $ => seq(
+      UNPIVOT,
+      $.unpivot_clause,
+      optional($.as_table_alias)
+    ),
+
+    pivot_clause: $ => seq(
+      '(',
+      $.aggregate_windowed_function,
+      FOR,
+      $.full_column_name,
+      IN,
+      $.column_alias_list,
+      ')'
+    ),
+
+    unpivot_clause: $ => seq(
+      '(',
+      field("unpivot_exp", $.expression),
+      FOR,
+      $.full_column_name,
+      IN,
+      '(',
+      $.full_column_name_list,
+      ')',
+      ')'
+    ),
+
+    full_column_name_list: $ => seq(
+      field("column", $.full_column_name),
+      repeat(seq(',', field("column", $.full_column_name)))
+    ),
+
+    rowset_function: $ => choice(
+      seq(
+        OPENROWSET,
+        '(',
+        field("provider_name", STRING),
+        ',',
+        field("connection_string", STRING),
+        ',',
+        field("sql", STRING),
+        ')'
+      ),
+      seq(
+        OPENROWSET,
+        '(',
+        BULK,
+        field("data_file", STRING),
+        ',',
+        choice(
+          seq($.bulk_option, repeat(seq(',', $.bulk_option))),
+          $.id_
+        ),
+        ')'
+      )
+    ),
+
+    bulk_option: $ => seq(
+      $.id_,
+      '=',
+      field("bulk_option_value", choice(DECIMAL, STRING))
+    ),
+
+    derived_table: $ => choice(
+      $.subquery,
+      seq('(', $.subquery, repeat(seq(UNION, ALL, $.subquery)), ')'),
+      $.table_value_constructor,
+      seq('(', $.table_value_constructor, ')')
+    ),
+
+    function_call: $ => choice(
+      $.ranking_windowed_function,
+      $.aggregate_windowed_function,
+      $.analytic_windowed_function,
+      $.built_in_functions,
+      seq($.scalar_function_name, '(', optional($.expression_list_), ')'),
+      $.freetext_function,
+      $.partition_function,
+      $.hierarchyid_static_method,
+    ),
+
+    partition_function: $ => seq(
+      optional(seq(field("database", $.id_), '.')),
+      $.DOLLAR_PARTITION,
+      '.',
+      field("func_name", $.id_),
+      '(',
+      $.expression,
+      ')'
+    ),
+
+    freetext_function: $ => choice(
+      seq(
+        choice(CONTAINSTABLE, FREETEXTTABLE),
+        '(',
+        $.table_name,
+        ',',
+        choice(
+          $.full_column_name,
+          seq('(', $.full_column_name, repeat(seq(',', $.full_column_name)), ')'),
+          '*'
+        ),
+        ',',
+        $.expression,
+        optional(seq(',', LANGUAGE, $.expression)),
+        optional(seq(',', $.expression)),
+        ')'
+      ),
+      seq(
+        choice(SEMANTICSIMILARITYTABLE, SEMANTICKEYPHRASETABLE),
+        '(',
+        $.table_name,
+        ',',
+        choice(
+          $.full_column_name,
+          seq('(', $.full_column_name, repeat(seq(',', $.full_column_name)), ')'),
+          '*'
+        ),
+        ',',
+        $.expression,
+        ')'
+      ),
+      seq(
+        SEMANTICSIMILARITYDETAILSTABLE,
+        '(',
+        $.table_name,
+        ',',
+        $.full_column_name,
+        ',',
+        $.expression,
+        ',',
+        $.full_column_name,
+        ',',
+        $.expression,
+        ')'
+      )
+    ),
+
+    freetext_predicate: $ => choice(
+      seq(
+        CONTAINS,
+        '(',
+        choice(
+          $.full_column_name,
+          seq('(', $.full_column_name, repeat(seq(',', $.full_column_name)), ')'),
+          '*',
+          seq(PROPERTY, '(', $.full_column_name, ',', $.expression, ')')
+        ),
+        ',',
+        $.expression,
+        ')'
+      ),
+      seq(
+        FREETEXT,
+        '(',
+        $.table_name,
+        ",",
+        choice(
+          $.full_column_name,
+          seq('(', $.full_column_name, repeat(seq(',', $.full_column_name)), ')'),
+          '*'
+        ),
+        ',',
+        $.expression,
+        optional(seq(',', LANGUAGE, $.expression)),
+        ')'
+      ),
+    ),
+
+    json_key_value: $ => seq(
+      field("json_key_name", $.expression),
+      ":",
+      field("value_expression", $.expression),
+    ),
+
+    json_null_clause: $ => seq(
+      choice(ABSENT, NULL_), ON, NULL_
+    ),
+
+    built_in_functions: $ => choice(
+      // Metadata functions
+      seq(APP_NAME, '(', ')'),
+      seq(APPLOCK_MODE, '(', field("database_principal", $.expression), ',', field("resource_name", $.expression), ',', field("lock_owner", $.expression), ')'),
+      seq(APPLOCK_TEST, '(', field("database_principal", $.expression), ',', field("resource_name", $.expression), ',', field("lock_mode", $.expression), ',', field("lock_owner", $.expression), ')'),
+      seq(ASSEMBLYPROPERTY, '(', field("assembly_name", $.expression), ',', field("property_name", $.expression), ')'),
+      seq(COL_LENGTH, '(', field("table", $.expression), ',', field("column", $.expression), ')'),
+      seq(COL_NAME, '(', field("table_id", $.expression), ',', field("column_id", $.expression), ')'),
+      seq(COLUMNPROPERTY, '(', field("id", $.expression), ',', field("column", $.expression), ',', field("property", $.expression), ')'),
+      seq(DATABASEPROPERTYEX, '(', field("database", $.expression), ',', field("property", $.expression), ')'),
+      seq(DB_ID, '(', optional(field("database_name", $.expression)), ')'),
+      seq(DB_NAME, '(', optional(field("database_id", $.expression)), ')'),
+      seq(FILE_ID, '(', field("file_name", $.expression), ')'),
+      seq(FILE_IDEX, '(', field("file_name", $.expression), ')'),
+      seq(FILE_NAME, '(', field("file_id", $.expression), ')'),
+      seq(FILEGROUP_ID, '(', field("filegroup_name", $.expression), ')'),
+      seq(FILEGROUP_NAME, '(', field("filegroup_id", $.expression), ')'),
+      seq(FILEGROUPPROPERTY, '(', field("filegroup_name", $.expression), ',', field("property", $.expression), ')'),
+      seq(FILEPROPERTY, '(', field("file_name", $.expression), ',', field("property", $.expression), ')'),
+      seq(FILEPROPERTYEX, '(', field("name", $.expression), ',', field("property", $.expression), ')'),
+      seq(FULLTEXTCATALOGPROPERTY, '(', field("catalog_name", $.expression), ',', field("property", $.expression), ')'),
+      seq(FULLTEXTSERVICEPROPERTY, '(', field("property", $.expression), ')'),
+      seq(INDEX_COL, '(', field("table_or_view_name", $.expression), ',', field("index_id", $.expression), ',', field("key_id", $.expression), ')'),
+      seq(INDEXKEY_PROPERTY, '(', field("object_id", $.expression), ',', field("index_id", $.expression), ',', field("key_id", $.expression), ',', field("property", $.expression), ')'),
+      seq(INDEXPROPERTY, '(', field("object_id", $.expression), ',', field("index_or_statistics_name", $.expression), ',', field("property", $.expression), ')'),
+      seq(NEXT, VALUE, FOR, field("sequence_name", $.table_name), optional(seq(OVER, '(', $.order_by_clause, ')'))),
+      seq(OBJECT_DEFINITION, '(', field("object_id", $.expression), ')'),
+      seq(OBJECT_ID, '(', field("object_name", $.expression), optional(seq(',', field("object_type", $.expression))), ')'),
+      seq(OBJECT_NAME, '(', field("object_id", $.expression), optional(seq(',', field("database_id", $.expression))), ')'),
+      seq(OBJECT_SCHEMA_NAME, '(', field("object_id", $.expression), optional(seq(',', field("database_id", $.expression))), ')'),
+      seq(OBJECTPROPERTY, '(', field("id", $.expression), ',', field("property", $.expression), ')'),
+      seq(OBJECTPROPERTYEX, '(', field("id", $.expression), ',', field("property", $.expression), ')'),
+      seq(ORIGINAL_DB_NAME, '(', ')'),
+      seq(PARSENAME, '(', field("object_name", $.expression), ',', field("object_piece", $.expression), ')'),
+      seq(SCHEMA_ID, '(', optional(field("schema_name", $.expression)), ')'),
+      seq(SCHEMA_NAME, '(', optional(field("schema_id", $.expression)), ')'),
+      seq(SCOPE_IDENTITY, '(', ')'),
+      seq(SERVERPROPERTY, '(', field("property", $.expression), ')'),
+      seq(STATS_DATE, '(', field("object_id", $.expression), ',', field("stats_id", $.expression), ')'),
+      seq(TYPE_ID, '(', field("type_name", $.expression), ')'),
+      seq(TYPE_NAME, '(', field("type_id", $.expression), ')'),
+      seq(TYPEPROPERTY, '(', field("type", $.expression), ',', field("property", $.expression), ')'),
+
+      // String functions
+      seq(ASCII, '(', field("character_expression", $.expression), ')'),
+      seq(CHAR, '(', field("integer_expression", $.expression), ')'),
+      seq(CHARINDEX, '(', field("expressionToFind", $.expression), ',', field("expressionToSearch", $.expression), optional(seq(',', field("start_location", $.expression))), ')'),
+      seq(CONCAT, '(', field("string_value_1", $.expression), ',', field("string_value_2", $.expression), repeat(seq(',', field("string_value_n", $.expression))), ')'),
+      seq(CONCAT_WS, '(', field("separator", $.expression), ',', field("argument_1", $.expression), ',', field("argument_2", $.expression), repeat(seq(',', field("argument_n", $.expression))), ')'),
+      seq(DIFFERENCE, '(', field("character_expression_1", $.expression), ',', field("character_expression_2", $.expression), ')'),
+      seq(FORMAT, '(', field("value", $.expression), ',', field("format", $.expression), optional(seq(',', field("culture", $.expression))), ')'),
+      seq(LEFT, '(', field("character_expression", $.expression), ',', field("integer_expression", $.expression), ')'),
+      seq(LEN, '(', field("string_expression", $.expression), ')'),
+      seq(LOWER, '(', field("character_expression", $.expression), ')'),
+      seq(LTRIM, '(', field("character_expression", $.expression), ')'),
+      seq(NCHAR, '(', field("integer_expression", $.expression), ')'),
+      seq(PATINDEX, '(', field("pattern", $.expression), ',', field("string_expression", $.expression), ')'),
+      seq(QUOTENAME, '(', field("character_string", $.expression), optional(seq(',', field("quote_character", $.expression))), ')'),
+      seq(REPLACE, '(', field("input", $.expression), ',', field("replacing", $.expression), ',', field("with", $.expression), ')'),
+      seq(REPLICATE, '(', field("string_expression", $.expression), ',', field("integer_expression", $.expression), ')'),
+      seq(REVERSE, '(', field("string_expression", $.expression), ')'),
+      seq(RIGHT, '(', field("character_expression", $.expression), ',', field("integer_expression", $.expression), ')'),
+      seq(RTRIM, '(', field("character_expression", $.expression), ')'),
+      seq(SOUNDEX, '(', field("character_expression", $.expression), ')'),
+      seq(SPACE_KEYWORD, '(', field("integer_expression", $.expression), ')'),
+      seq(STR, '(', field("float_expression", $.expression), optional(seq(',', field("length_expression", $.expression), optional(seq(',', field("decimal", $.expression))))), ')'),
+      seq(STRING_AGG, '(', field("expr", $.expression), ',', field("separator", $.expression), ')', optional(seq(WITHIN, GROUP, '(', $.order_by_clause, ')'))),
+      seq(STRING_ESCAPE, '(', field("text_", $.expression), ',', field("type_", $.expression), ')'),
+      seq(STUFF, '(', field("str", $.expression), ',', field("from", $.expression), ',', field("to", $.expression), ',', field("str_with", $.expression), ')'),
+      seq(SUBSTRING, '(', field("string_expression", $.expression), ',', field("start_", $.expression), ',', field("length", $.expression), ')'),
+      seq(TRANSLATE, '(', field("inputString", $.expression), ',', field("characters", $.expression), ',', field("translations", $.expression), ')'),
+      seq(TRIM, '(', optional(seq(field("characters", $.expression), FROM)), field("string_", $.expression), ')'),
+      seq(UNICODE, '(', field("ncharacter_expression", $.expression), ')'),
+      seq(UPPER, '(', field("character_expression", $.expression), ')'),
+
+      // System functions
+      seq(BINARY_CHECKSUM, '(', choice('*', seq($.expression, repeat(seq(',', $.expression)))), ')'),
+      seq(CHECKSUM, '(', choice('*', seq($.expression, repeat(seq(',', $.expression)))), ')'),
+      seq(COMPRESS, '(', field("expr", $.expression), ')'),
+      seq(CONNECTIONPROPERTY, '(', field("property", STRING), ')'),
+      seq(CONTEXT_INFO, '(', ')'),
+      seq(CURRENT_REQUEST_ID, '(', ')'),
+      seq(CURRENT_TRANSACTION_ID, '(', ')'),
+      seq(DECOMPRESS, '(', field("expr", $.expression), ')'),
+      seq(ERROR_LINE, '(', ')'),
+      seq(ERROR_MESSAGE, '(', ')'),
+      seq(ERROR_NUMBER, '(', ')'),
+      seq(ERROR_PROCEDURE, '(', ')'),
+      seq(ERROR_SEVERITY, '(', ')'),
+      seq(ERROR_STATE, '(', ')'),
+      seq(FORMATMESSAGE, '(', choice(field("msg_number", DECIMAL), field("msg_string", STRING), field("msg_variable", LOCAL_ID)), ',', $.expression, repeat(seq(',', $.expression)), ')'),
+      seq(GET_FILESTREAM_TRANSACTION_CONTEXT, '(', ')'),
+      seq(GETANSINULL, '(', optional(field("database", STRING)), ')'),
+      seq(HOST_ID, '(', ')'),
+      seq(HOST_NAME, '(', ')'),
+      seq(ISNULL, '(', field("left", $.expression), ',', field("right", $.expression), ')'),
+      seq(ISNUMERIC, '(', $.expression, ')'),
+      seq(MIN_ACTIVE_ROWVERSION, '(', ')'),
+      seq(NEWID, '(', ')'),
+      seq(NEWSEQUENTIALID, '(', ')'),
+      seq(ROWCOUNT_BIG, '(', ')'),
+      seq(SESSION_CONTEXT, '(', field("key", STRING), ')'),
+      seq(XACT_STATE, '(', ')'),
+      seq(CAST, '(', $.expression, AS, $.data_type, ')'),
+      seq(TRY_CAST, '(', $.expression, AS, $.data_type, ')'),
+      seq(CONVERT, '(', field("convert_data_type", $.data_type), ',', field("convert_expression", $.expression), optional(seq(',', field("style", $.expression))), ')'),
+      seq(COALESCE, '(', $.expression_list_, ')'),
+
+      // Cursor functions
+      CURSOR_ROWS,
+      FETCH_STATUS,
+      seq(CURSOR_STATUS, '(', field("scope", STRING), ',', field("cursor", $.expression), ')'),
+
+      // Cryptographic functions
+      seq(CERT_ID, '(', field("cert_name", $.expression), ')'),
+
+      // Data type functions
+      seq(DATALENGTH, '(', $.expression, ')'),
+      seq(IDENT_CURRENT, '(', field("table_or_view", $.expression), ')'),
+      seq(IDENT_INCR, '(', field("table_or_view", $.expression), ')'),
+      seq(IDENT_SEED, '(', field("table_or_view", $.expression), ')'),
+      seq(IDENTITY, '(', field("datatype", $.data_type), optional(seq(',', field("seed", DECIMAL), ',', field("increment", DECIMAL))), ')'),
+      seq(SQL_VARIANT_PROPERTY, '(', field("expr", $.expression), ',', field("property", STRING), ')'),
+
+      // Date functions
+      seq(CURRENT_DATE, '(', ')'),
+      CURRENT_TIMESTAMP,
+      seq(CURRENT_TIMEZONE, '(', ')'),
+      seq(CURRENT_TIMEZONE_ID, '(', ')'),
+      seq(DATE_BUCKET, '(', field("datepart", $.dateparts_9), ',', field("number", $.expression), ',', field("date", $.expression), optional(seq(',', field("origin", $.expression))), ')'),
+      seq(DATEADD, '(', field("datepart", $.dateparts_12), ',', field("number", $.expression), ',', field("date", $.expression), ')'),
+      seq(DATEDIFF, '(', field("datepart", $.dateparts_12), ',', field("date_first", $.expression), ',', field("date_second", $.expression), ')'),
+      seq(DATEDIFF_BIG, '(', field("datepart", $.dateparts_12), ',', field("startdate", $.expression), ',', field("enddate", $.expression), ')'),
+      seq(DATEFROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ')'),
+      seq(DATENAME, '(', field("datepart", $.dateparts_15), ',', field("date", $.expression), ')'),
+      seq(DATEPART, '(', field("datepart", $.dateparts_15), ',', field("date", $.expression), ')'),
+      seq(DATETIME2FROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ',', field("hour", $.expression), ',', field("minute", $.expression), ',', field("seconds", $.expression), ',', field("fractions", $.expression), ',', field("precision", $.expression), ')'),
+      seq(DATETIMEFROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ',', field("hour", $.expression), ',', field("minute", $.expression), ',', field("seconds", $.expression), ',', field("milliseconds", $.expression), ')'),
+      seq(DATETIMEOFFSETFROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ',', field("hour", $.expression), ',', field("minute", $.expression), ',', field("seconds", $.expression), ',', field("fractions", $.expression), ',', field("hour_offset", $.expression), ',', field("minute_offset", $.expression), ',', field("precision", DECIMAL), ')'),
+      seq(DATETRUNC, '(', field("datepart", $.dateparts_datetrunc), ',', field("date", $.expression), ')'),
+      seq(DAY, '(', field("date", $.expression), ')'),
+      seq(EOMONTH, '(', field("start_date", $.expression), optional(seq(',', field("month_to_add", $.expression))), ')'),
+      seq(GETDATE, '(', ')'),
+      seq(GETUTCDATE, '(', ')'),
+      seq(ISDATE, '(', $.expression, ')'),
+      seq(MONTH, '(', field("date", $.expression), ')'),
+      seq(SMALLDATETIMEFROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ',', field("hour", $.expression), ',', field("minute", $.expression), ')'),
+      seq(SWITCHOFFSET, '(', field("datetimeoffset_expression", $.expression), ',', field("timezoneoffset_expression", $.expression), ')'),
+      seq(SYSDATETIME, '(', ')'),
+      seq(SYSDATETIMEOFFSET, '(', ')'),
+      seq(SYSUTCDATETIME, '(', ')'),
+      seq(TIMEFROMPARTS, '(', field("hour", $.expression), ',', field("minute", $.expression), ',', field("seconds", $.expression), ',', field("fractions", $.expression), ',', field("precision", DECIMAL), ')'),
+      seq(TODATETIMEOFFSET, '(', field("datetime_expression", $.expression), ',', field("timezoneoffset_expression", $.expression), ')'),
+      seq(YEAR, '(', field("date", $.expression), ')'),
+      seq(IDENTITY, '(', field("data_type", $.data_type), optional(seq(',', field("seed", DECIMAL))), optional(seq(',', field("increment", DECIMAL))), ')'),
+      seq(NULLIF, '(', field("left", $.expression), ',', field("right", $.expression), ')'),
+      seq(PARSE, '(', field("str", $.expression), AS, $.data_type, optional(seq(USING, field("culture", $.expression))), ')'),
+      $.xml_data_type_methods,
+      seq(IIF, '(', field("cond", $.search_condition), ',', field("left", $.expression), ',', field("right", $.expression), ')'),
+
+      // JSON functions
+      seq(ISJSON, '(', field("json_expr", $.expression), optional(seq(',', field("json_type_constraint", $.expression))), ')'),
+      seq(JSON_OBJECT, '(', optional(seq(field("key_value", $.json_key_value), repeat(seq(',', field("key_value", $.json_key_value))))), optional($.json_null_clause), ')'),
+      seq(JSON_ARRAY, '(', optional($.expression_list_), optional($.json_null_clause), ')'),
+      seq(JSON_VALUE, '(', field("expr", $.expression), ',', field("path", $.expression), ')'),
+      seq(JSON_QUERY, '(', field("expr", $.expression), optional(seq(',', field("path", $.expression))), ')'),
+      seq(JSON_MODIFY, '(', field("expr", $.expression), ',', field("path", $.expression), ',', field("new_value", $.expression), ')'),
+      seq(JSON_PATH_EXISTS, '(', field("value_expression", $.expression), ',', field("sql_json_path", $.expression), ')'),
+
+      // Math functions
+      seq(ABS, '(', field("numeric_expression", $.expression), ')'),
+      seq(ACOS, '(', field("float_expression", $.expression), ')'),
+      seq(ASIN, '(', field("float_expression", $.expression), ')'),
+      seq(ATAN, '(', field("float_expression", $.expression), ')'),
+      seq(ATN2, '(', field("float_expression", $.expression), ',', field("float_expression", $.expression), ')'),
+      seq(CEILING, '(', field("numeric_expression", $.expression), ')'),
+      seq(COS, '(', field("float_expression", $.expression), ')'),
+      seq(COT, '(', field("float_expression", $.expression), ')'),
+      seq(DEGREES, '(', field("numeric_expression", $.expression), ')'),
+      seq(EXP, '(', field("float_expression", $.expression), ')'),
+      seq(FLOOR, '(', field("numeric_expression", $.expression), ')'),
+      seq(LOG, '(', field("float_expression", $.expression), optional(seq(',', field("base", $.expression))), ')'),
+      seq(LOG10, '(', field("float_expression", $.expression), ')'),
+      seq(PI, '(', ')'),
+      seq(POWER, '(', field("float_expression", $.expression), ',', field("y", $.expression), ')'),
+      seq(RADIANS, '(', field("numeric_expression", $.expression), ')'),
+      seq(RAND, '(', optional(field("seed", $.expression)), ')'),
+      seq(ROUND, '(', field("numeric_expression", $.expression), ',', field("length", $.expression), optional(seq(',', field("function", $.expression))), ')'),
+      seq(SIGN, '(', field("numeric_expression", $.expression), ')'),
+      seq(SIN, '(', field("float_expression", $.expression), ')'),
+      seq(SQRT, '(', field("float_expression", $.expression), ')'),
+      seq(SQUARE, '(', field("float_expression", $.expression), ')'),
+      seq(TAN, '(', field("float_expression", $.expression), ')'),
+
+      // Logical functions
+      seq(GREATEST, '(', $.expression_list_, ')'),
+      seq(LEAST, '(', $.expression_list_, ')'),
+
+      // Security functions
+      seq(CERTENCODED, '(', field("certid", $.expression), ')'),
+      seq(CERTPRIVATEKEY, '(', field("certid", $.expression), ',', field("encryption_password", $.expression), optional(seq(',', field("decryption_pasword", $.expression))), ')'),
+      CURRENT_USER,
+      seq(DATABASE_PRINCIPAL_ID, '(', optional(field("principal_name", $.expression)), ')'),
+      seq(HAS_DBACCESS, '(', field("database_name", $.expression), ')'),
+      seq(HAS_PERMS_BY_NAME, '(', field("securable", $.expression), ',', field("securable_class", $.expression), ',', field("permission", $.expression), optional(seq(',', field("sub_securable", $.expression), optional(seq(',', field("sub_securable_class", $.expression))))), ')'),
+      seq(IS_MEMBER, '(', field("group_or_role", $.expression), ')'),
+      seq(IS_ROLEMEMBER, '(', field("role", $.expression), optional(seq(',', field("database_principal", $.expression))), ')'),
+      seq(IS_SRVROLEMEMBER, '(', field("role", $.expression), optional(seq(',', field("login", $.expression))), ')'),
+      seq(LOGINPROPERTY, '(', field("login_name", $.expression), ',', field("property_name", $.expression), ')'),
+      ORIGINAL_LOGIN,
+      seq(PERMISSIONS, '(', optional(seq(field("object_id", $.expression), optional(seq(',', field("column", $.expression))))), ')'),
+      seq(PWDENCRYPT, '(', field("password", $.expression), ')'),
+      seq(PWDCOMPARE, '(', field("clear_text_password", $.expression), ',', field("password_hash", $.expression), optional(seq(',', field("version", $.expression))), ')'),
+      SESSION_USER,
+      seq(SESSIONPROPERTY, '(', field("option_name", $.expression), ')'),
+      seq(SUSER_ID, '(', optional(field("login", $.expression)), ')'),
+      seq(SUSER_NAME, '(', optional(field("server_user_sid", $.expression)), ')'),
+      seq(SUSER_SID, '(', optional(seq(field("login", $.expression), optional(seq(',', field("param2", $.expression))))), ')'),
+      seq(SUSER_SNAME, '(', optional(field("server_user_sid", $.expression)), ')'),
+      SYSTEM_USER,
+      USER,
+      seq(USER_ID, '(', optional(field("user", $.expression)), ')'),
+      seq(USER_NAME, '(', optional(field("id", $.expression)), ')')
+    ),
+
+    xml_data_type_methods: $ => choice(
+        $.value_method,
+        $.query_method,
+        $.exist_method,
+        $.modify_method
+    ),
+
+
+    // https://learn.microsoft.com/en-us/sql/t-sql/functions/date-bucket-transact-sql?view=sql-server-ver16
+    dateparts_9: $ => choice(
+      YEAR,
+      YEAR_ABBR,
+      QUARTER,
+      QUARTER_ABBR,
+      MONTH,
+      MONTH_ABBR,
+      DAY,
+      DAY_ABBR,
+      WEEK,
+      WEEK_ABBR,
+      HOUR,
+      HOUR_ABBR,
+      MINUTE,
+      MINUTE_ABBR,
+      SECOND,
+      SECOND_ABBR,
+      MILLISECOND,
+      MILLISECOND_ABBR
+    ),
+
+    // https://learn.microsoft.com/en-us/sql/t-sql/functions/dateadd-transact-sql?view=sql-server-ver16
+    dateparts_12: $ => choice(
+      $.dateparts_9,
+      DAYOFYEAR,
+      DAYOFYEAR_ABBR,
+      MICROSECOND,
+      MICROSECOND_ABBR,
+      NANOSECOND,
+      NANOSECOND_ABBR
+    ),
+
+    // https://learn.microsoft.com/en-us/sql/t-sql/functions/datename-transact-sql?view=sql-server-ver16
+    dateparts_15: $ => choice(
+      $.dateparts_12,
+      WEEKDAY,
+      WEEKDAY_ABBR,
+      TZOFFSET,
+      TZOFFSET_ABBR,
+      ISO_WEEK,
+      ISO_WEEK_ABBR
+    ),
+
+    // https://learn.microsoft.com/en-us/sql/t-sql/functions/datetrunc-transact-sql?view=sql-server-ver16
+    dateparts_datetrunc: $ => choice(
+      $.dateparts_9,
+      DAYOFYEAR,
+      DAYOFYEAR_ABBR,
+      MICROSECOND,
+      MICROSECOND_ABBR,
+      ISO_WEEK,
+      ISO_WEEK_ABBR
+    ),
+
+    value_method: $ => seq(
+      choice(
+        field("loc_id", LOCAL_ID),
+        field("value_id", $.full_column_name),
+        field("eventdata", seq(EVENTDATA, '(', ')')),
+        field("query", $.query_method),
+        seq('(', $.subquery, ')')
+      ),
+      '.',
+      field("call", $.value_call)
+    ),
+
+    value_call: $ => seq(
+      choice(VALUE, VALUE_SQUARE_BRACKET),
+      '(',
+      field("xquery", STRING),
+      ',',
+      field("sqltype", STRING),
+      ')'
+    ),
+
+    query_method: $ => seq(
+      choice(
+        field("loc_id", LOCAL_ID),
+        field("value_id", $.full_column_name),
+        seq('(', $.subquery, ')')
+      ),
+      '.',
+      field("call", $.query_call)
+    ),
+
+    query_call: $ => seq(
+      choice(QUERY, QUERY_SQUARE_BRACKET),
+      '(',
+      field("xquery", STRING),
+      ')'
+    ),
+
+    exist_method: $ => seq(
+      choice(
+        field("loc_id", LOCAL_ID),
+        field("value_id", $.full_column_name),
+        seq('(', $.subquery, ')')
+      ),
+      '.',
+      field("call", $.exist_call)
+    ),
+
+    exist_call: $ => seq(
+      choice(EXIST, EXIST_SQUARE_BRACKET),
+      '(',
+      field("xquery", STRING),
+      ')'
+    ),
+
+    modify_method: $ => seq(
+      choice(
+        field("loc_id", LOCAL_ID),
+        field("value_id", $.full_column_name),
+        seq('(', $.subquery, ')')
+      ),
+      '.',
+      field("call", $.modify_call)
+    ),
+
+    modify_call: $ => seq(
+      choice(MODIFY, MODIFY_SQUARE_BRACKET),
+      '(',
+      field("xml_dml", STRING),
+      ')'
+    ),
+
+    hierarchyid_call: $ => choice(
+      seq(GETANCESTOR, '(', field("n", $.expression), ')'),
+      seq(
+        GETDESCENDANT,
+        '(',
+        field("child1", $.expression),
+        ',',
+        field("child2", $.expression),
+        ')'
+      ),
+      seq(GETLEVEL, '(', ')'),
+      seq(ISDESCENDANTOF, '(', field("parent_", $.expression), ')'),
+      seq(
+        GETREPARENTEDVALUE,
+        '(',
+        field("oldroot", $.expression),
+        ',',
+        field("newroot", $.expression),
+        ')'
+      ),
+      seq(TOSTRING, '(', ')')
+    ),
+
+    hierarchyid_static_method: $ => seq(
+      HIERARCHYID,
+      DOUBLE_COLON,
+      choice(
+        seq(GETROOT, '(', ')'),
+        seq(PARSE, '(', field("input", $.expression), ')')
+      )
+    ),
+
+    nodes_method: $ => seq(
+      choice(
+        field("loc_id", LOCAL_ID),
+        field("value_id", $.full_column_name),
+        seq('(', $.subquery, ')')
+      ),
+      '.',
+      NODES,
+      '(',
+      field("xquery", STRING),
+      ')'
+    ),
+
+    switch_section: $ => seq(
+      WHEN,
+      $.expression,
+      THEN,
+      $.expression
+    ),
+
+    switch_search_condition_section: $ => seq(
+      WHEN,
+      $.search_condition,
+      THEN,
+      $.expression
+    ),
+
+    as_column_alias: $ => seq(optional(AS), $.column_alias),
+
+    table_alias: $ => $.id_,
+
+    with_table_hints: $ => seq(
+      WITH,
+      '(',
+      field("hint", $.table_hint),
+      repeat(seq(
+        optional(','),
+        field("hint", $.table_hint)
+      )),
+      ')'
+    ),
+
+    deprecated_table_hint: $ => seq("(", $.table_hint, ")"),
+
+    sybase_legacy_hints: $ => repeat1($.sybase_legacy_hint),
+
+    sybase_legacy_hint: $ => choice(
+      HOLDLOCK,
+      NOHOLDLOCK,
+      READPAST,
+      SHARED
+    ),
+
+    table_hint: $ => choice(
+        NOEXPAND,
+        seq(
+          INDEX, choice(
+            seq('(', $.index_value, repeat(seq(',' $.index_value)), ')'),
+            seq('=', '(', $.index_value, ')'),
+            seq('=', $.index_value),
+          )
+        ),
+        seq(FORCESEEK, optional(seq('(', $.index_value, '(', $.column_name_list, ')', ')'))),
+        FORCESCAN,
+        HOLDLOCK,
+        NOLOCK,
+        NOWAIT,
+        PAGLOCK,
+        READCOMMITTED,
+        READCOMMITTEDLOCK,
+        READPAST,
+        READUNCOMMITTED,
+        REPEATABLEREAD,
+        ROWLOCK,
+        SERIALIZABLE,
+        SNAPSHOT,
+        seq(SPATIAL_WINDOW_MAX_CELLS, '=', DECIMAL),
+        TABLOCK,
+        TABLOCKX,
+        UPDLOCK,
+        XLOCK,
+        KEEPIDENTITY,
+        KEEPDEFAULTS,
+        IGNORE_CONSTRAINTS,
+        IGNORE_TRIGGERS
+    ),
+
+    index_value: $ => choice(
+      $.id_,
+      DECIMAL
+    ),
+
+    column_alias_list: $ => seq(
+      '(',
+      commaSep1(field("alias", $.column_alias)),
+      ')'
+    ),
+
+    column_alias: $ => choice(
+      $.id_,
+      STRING
+    ),
+
+    table_value_constructor: $ => seq(
+      VALUES,
+      commaSep1(
+        seq('(', field("exps", $.expression_list_), ')')
+      )
+    ),
+
+    expression_list_: $ => commaSep1(
+      field("exp", $.expression)
+    ),
+
+    // https://msdn.microsoft.com/en-us/library/ms189798.aspx
+    ranking_windowed_function: $ => choice(
+      seq(
+        choice(RANK, DENSE_RANK, ROW_NUMBER),
+        '(',
+        ')',
+        $.over_clause
+      ),
+      seq(
+        NTILE,
+        '(',
+        $.expression,
+        ')',
+        $.over_clause
+      )
+    ),
+
+    // https://msdn.microsoft.com/en-us/library/ms173454.aspx
+    aggregate_windowed_function: $ => choice(
+      seq(
+        field("agg_func", choice(AVG, MAX, MIN, SUM, STDEV, STDEVP, VAR, VARP)),
+        '(',
+        $.all_distinct_expression,
+        ')',
+        optional($.over_clause)
+      ),
+      seq(
+        field("cnt", choice(COUNT, COUNT_BIG)),
+        '(',
+        choice('*', $.all_distinct_expression),
+        ')',
+        optional($.over_clause)
+      ),
+      seq(
+        CHECKSUM_AGG,
+        '(',
+        $.all_distinct_expression,
+        ')'
+      ),
+      seq(
+        GROUPING,
+        '(',
+        $.expression,
+        ')'
+      ),
+      seq(
+        GROUPING_ID,
+        '(',
+        $.expression_list_,
+        ')'
+      )
+    ),
+
+    // https://docs.microsoft.com/en-us/sql/t-sql/functions/analytic-functions-transact-sql
+    analytic_windowed_function: $ => choice(
+      seq(
+        choice(FIRST_VALUE, LAST_VALUE),
+        '(',
+        $.expression,
+        ')',
+        $.over_clause
+      ),
+      seq(
+        choice(LAG, LEAD),
+        '(',
+        $.expression,
+        optional(seq(
+          ',',
+          $.expression,
+          optional(seq(',', $.expression))
+        )),
+        ')',
+        $.over_clause
+      ),
+      seq(
+        choice(CUME_DIST, PERCENT_RANK),
+        '(',
+        ')',
+        OVER,
+        '(',
+        optional(seq(PARTITION, BY, $.expression_list_)),
+        $.order_by_clause,
+        ')'
+      ),
+      seq(
+        choice(PERCENTILE_CONT, PERCENTILE_DISC),
+        '(',
+        $.expression,
+        ')',
+        WITHIN,
+        GROUP,
+        '(',
+        $.order_by_clause,
+        ')',
+        OVER,
+        '(',
+        optional(seq(PARTITION, BY, $.expression_list_)),
+        ')'
+      )
+    ),
+
+    all_distinct_expression: $ => seq(
+      optional(choice(ALL, DISTINCT)),
+      $.expression
+    ),
+
+    over_clause: $ => seq(
+      OVER,
+      '(',
+      optional(seq(PARTITION, BY, $.expression_list_)),
+      optional($.order_by_clause),
+      optional($.row_or_range_clause),
+      ')'
+    ),
+
+    row_or_range_clause: $ => seq(
+      choice(ROWS, RANGE),
+      $.window_frame_extent
+    ),
+
+    window_frame_extent: $ => choice(
+      $.window_frame_preceding,
+      seq(BETWEEN, $.window_frame_bound, AND, $.window_frame_bound)
+    ),
+
+    window_frame_bound: $ => choice(
+      $.window_frame_preceding,
+      $.window_frame_following
+    ),
+
+    window_frame_preceding: $ => choice(
+      seq(UNBOUNDED, PRECEDING),
+      seq(DECIMAL, PRECEDING),
+      seq(CURRENT, ROW)
+    ),
+
+    window_frame_following: $ => choice(
+      seq(UNBOUNDED, FOLLOWING),
+      seq(DECIMAL, FOLLOWING)
+    ),
+
+    create_database_option: $ => choice(
+      seq(FILESTREAM, '(', commaSep1($.database_filestream_option), ')'),
+      seq(DEFAULT_LANGUAGE, EQUAL, choice($.id_, STRING)),
+      seq(DEFAULT_FULLTEXT_LANGUAGE, EQUAL, choice($.id_, STRING)),
+      seq(NESTED_TRIGGERS, EQUAL, choice(OFF, ON)),
+      seq(TRANSFORM_NOISE_WORDS, EQUAL, choice(OFF, ON)),
+      seq(TWO_DIGIT_YEAR_CUTOFF, EQUAL, DECIMAL),
+      seq(DB_CHAINING, choice(OFF, ON)),
+      seq(TRUSTWORTHY, choice(OFF, ON))
+    ),
+
+    database_filestream_option: $ => seq(
+      LR_BRACKET,
+      choice(
+        seq(NON_TRANSACTED_ACCESS, EQUAL, choice(OFF, READ_ONLY, FULL)),
+        seq(DIRECTORY_NAME, EQUAL, STRING)
+      ),
+      RR_BRACKET
+    ),
+
+    database_file_spec: $ => choice(
+      $.file_group,
+      $.file_spec
+    ),
+
+    file_group: $ => seq(
+      FILEGROUP,
+      $.id_,
+      optional(seq(CONTAINS, FILESTREAM)),
+      optional(DEFAULT),
+      optional(seq(CONTAINS, MEMORY_OPTIMIZED_DATA)),
+      $.file_spec,
+      repeat(seq(',', $.file_spec))
+    ),
+
+    file_spec: $ => seq(
+      LR_BRACKET,
+      NAME,
+      EQUAL,
+      choice($.id_, STRING),
+      optional(','),
+      FILENAME,
+      EQUAL,
+      field("file", STRING),
+      optional(','),
+      optional(seq(SIZE, EQUAL, $.file_size, optional(','))),
+      optional(seq(MAXSIZE, EQUAL, choice($.file_size, UNLIMITED), optional(','))),
+      optional(seq(FILEGROWTH, EQUAL, $.file_size, optional(','))),
+      RR_BRACKET
+    ),
+
+    entity_name: $ => seq(
+      optional(choice(
+        seq(field("server", $.id_), '.', field("database", $.id_), '.', field("schema", $.id_), '.'),
+        seq(field("database", $.id_), '.', optional(field("schema", $.id_)), '.'),
+        seq(field("schema", $.id_), '.')
+      )),
+      field("table", $.id_)
+    ),
+
+    entity_name_for_azure_dw: $ => choice(
+      field("schema", $.id_),
+      seq(field("schema", $.id_), '.', field("object_name", $.id_))
+    ),
+
+    entity_name_for_parallel_dw: $ => choice(
+      field("schema_database", $.id_),
+      seq(field("schema", $.id_), '.', field("object_name", $.id_))
+    ),
+
+    full_table_name: $ => seq(
+      optional(choice(
+        seq(field("linkedServer", $.id_), '.', '.', field("schema", $.id_), '.'),
+        seq(field("server", $.id_), '.', field("database", $.id_), '.', field("schema", $.id_), '.'),
+        seq(field("database", $.id_), '.', optional(field("schema", $.id_)), '.'),
+        seq(field("schema", $.id_), '.')
+      )),
+      field("table", $.id_)
+    ),
+
+    table_name: $ => seq(
+      optional(choice(
+        seq(field("database", $.id_), '.', optional(field("schema", $.id_)), '.'),
+        seq(field("schema", $.id_), '.')
+      )),
+      choice(
+        field("table", $.id_),
+        field("blocking_hierarchy", BLOCKING_HIERARCHY)
+      )
+    ),
+
+    simple_name: $ => seq(
+      optional(seq(field("schema", $.id_), '.')),
+      field("name", $.id_)
+    ),
+
+    func_proc_name_schema: $ => seq(
+      optional(seq(field("schema", $.id_), '.')),
+      field("procedure", $.id_)
+    ),
+
+    func_proc_name_database_schema: $ => choice(
+      seq(
+        optional(field("database", $.id_)),
+        '.',
+        optional(field("schema", $.id_)),
+        '.',
+        field("procedure", $.id_)
+      ),
+      $.func_proc_name_schema
+    ),
+
+    func_proc_name_server_database_schema: $ => choice(
+      seq(
+        optional(field("server", $.id_)),
+        '.',
+        optional(field("database", $.id_)),
+        '.',
+        optional(field("schema", $.id_)),
+        '.',
+        field("procedure", $.id_)
+      ),
+      $.func_proc_name_database_schema
+    ),
+
+    ddl_object: $ => choice(
+      $.full_table_name,
+      LOCAL_ID
+    ),
+
+    full_column_name: $ => seq(
+      optional(seq(
+        choice(DELETED, INSERTED, $.full_table_name),
+        '.'
+      )),
+      choice(
+        field("column_name", $.id_),
+        seq('$', choice(IDENTITY, ROWGUID))
+      )
+    ),
+
+    column_name_list_with_order: $ => seq(
+      $.id_,
+      optional(choice(ASC, DESC)),
+      repeat(seq(",", $.id_, optional(choice(ASC, DESC))))
+    ),
+
     insert_column_name_list: $ => seq(
       field("col", $.insert_column_id),
       repeat(
@@ -1912,50 +3028,31 @@ module.exports = grammar({
       TO,
       SERVICE,
       field("target_service_name", $.service_name),
-      optional(
-        seq(
-          ",",
-          field("service_broker_guid", STRING)
-        )
-      ),
+      optional(seq(',', field("service_broker_guid", STRING))),
       ON,
       CONTRACT,
       field("contract_name", $.contract_name),
-      optional(
-        seq(
-          WITH,
-          optional(
-            seq(
-              choice(
-                RELATED_CONVERSATION,
-                RELATED_CONVERSATION_GROUP
-              ),
-              "=",
-              LOCAL_ID,
-              optional(",")
-            )
-          ),
-          optional(
-            seq(
-              LIFETIME,
-              "=",
-              choice(
-                DECIMAL,
-                LOCAL_ID
-              ),
-              optional(",")
-            )
-          ),
-          optional(
-            seq(
-              ENCRYPTION,
-              "=",
-              $.on_off
-            )
-          )
-        )
-      ),
-      optional(";")
+      optional(seq(
+        WITH,
+        optional(seq(
+          choice(RELATED_CONVERSATION, RELATED_CONVERSATION_GROUP),
+          '=',
+          LOCAL_ID,
+          optional(',')
+        )),
+        optional(seq(
+          LIFETIME,
+          '=',
+          choice(DECIMAL, LOCAL_ID),
+          optional(',')
+        )),
+        optional(seq(
+          ENCRYPTION,
+          '=',
+          $.on_off
+        ))
+      )),
+      optional(';')
     ),
 
     contract_name: $ => choice(
@@ -1999,64 +3096,52 @@ module.exports = grammar({
 
     waitfor_conversation: $ => seq(
       optional(WAITFOR),
-      "(",
+      '(',
       $.get_conversation,
-      ")",
-      optional(
-        seq(
-          optional(","),
-          TIMEOUT,
-          field("timeout", $.time)
-        )
-      ),
-      optional(";")
+      ')',
+      optional(seq(
+        optional(','),
+        TIMEOUT,
+        field("timeout", $.time)
+      )),
+      optional(';')
     ),
 
     get_conversation: $ => seq(
       GET,
       CONVERSATION,
       GROUP,
-      field(
-        "conversation_group_id",
-        choice(STRING, LOCAL_ID)
-      ),
+      field("conversation_group_id", choice(STRING, LOCAL_ID)),
       FROM,
       field("queue", $.queue_id),
-      optional(";")
+      optional(';')
     ),
 
     queue_id: $ => choice(
-      choice(
-        seq(
-          field("database_name", $.id_),
-          '.',
-          field("schema_name", $.id_),
-          '.',
-          field("name", $.id_)
-        ),
-        $.id_
-      )
+      seq(
+        field("database_name", $.id_),
+        '.',
+        field("schema_name", $.id_),
+        '.',
+        field("name", $.id_)
+      ),
+      $.id_
     ),
 
     send_conversation: $ => seq(
       SEND,
       ON,
       CONVERSATION,
-      field("conversation_handle", choice(STRING, LOCAL_ID)),
+      field("conversation_function", choice(STRING, LOCAL_ID)),
       MESSAGE,
       TYPE,
       field("message_type_name", $.expression),
-      optional(
-        seq(
-          "(",
-            field(
-              "message_body_expression",
-              choice(STRING, LOCAL_ID)
-            ),
-            ")"
-        )
-      ),
-      optional(";")
+      optional(seq(
+        '(',
+        field("message_body_expression", choice(STRING, LOCAL_ID)),
+        ')'
+      )),
+      optional(';')
     ),
 
     data_type: $ => choice(
