@@ -2939,175 +2939,451 @@ module.exports = grammar({
       choice(seq(optional(seq(field("schema_id", $.id_), DOT)), field("object_name", $.id_)), DATABASE, seq(ALL, SERVER))
     ),
 
-    // MARKER
-
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/enable-trigger-transact-sql
-    enable_trigger: $ => (
-            seq(ENABLE, TRIGGER, choice(seq(repeat1(seq(optional(COMMA), optional(seq(field("schema_name", $.id_), DOT),), field("trigger_name", $.id_))), ALL),), ON, choice(
-        seq(optional(seq(field("schema_id", $.id_), DOT),), field("object_name", $.id_)),
-            DATABASE,
-        seq(ALL, SERVER)
-        ),),
+    enable_trigger: $ => seq(
+      ENABLE,
+      TRIGGER,
+      choice(seq(repeat1(seq(optional(COMMA), optional(seq(field("schema_name", $.id_), DOT)), field("trigger_name", $.id_))), ALL),),
+      ON,
+      choice(seq(optional(seq(field("schema_id", $.id_), DOT)), field("object_name", $.id_)), DATABASE, seq(ALL, SERVER))
     ),
 
-    lock_table: $ => (
-            seq(LOCK, TABLE, $.table_name, IN, choice(seq(SHARE, EXCLUSIVE),), MODE, optional(choice(seq(WAIT, field("seconds", DECIMAL), NOWAIT),)), optional(';')),
+    lock_table: $ => seq(
+      LOCK,
+      TABLE,
+      $.table_name,
+      IN,
+      choice(seq(SHARE, EXCLUSIVE)),
+      MODE,
+      optional(choice(seq(WAIT, field("seconds", DECIMAL), NOWAIT),)),
+      optional(';')
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/truncate-table-transact-sql
-    truncate_table: $ => (
-            seq(TRUNCATE, TABLE, $.table_name, optional(
-        seq(WITH, LR_BRACKET, PARTITIONS, LR_BRACKET, repeat1(seq(optional(COMMA), choice(seq(DECIMAL, DECIMAL, TO, DECIMAL),))), RR_BRACKET, RR_BRACKET)
-        ),),
+    truncate_table: $ => seq(
+      TRUNCATE,
+      TABLE,
+      $.table_name,
+      optional(seq(
+        WITH,
+        LR_BRACKET,
+        PARTITIONS,
+        LR_BRACKET,
+        repeat1(seq(optional(COMMA), choice(seq(DECIMAL, DECIMAL, TO, DECIMAL),))),
+        RR_BRACKET,
+        RR_BRACKET
+      )),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-column-master-key-transact-sql
-    create_column_master_key: $ => (
-            seq(CREATE, COLUMN, MASTER, KEY, field("key_name", $.id_), WITH, LR_BRACKET, KEY_STORE_PROVIDER_NAME, EQUAL, field("key_store_provider_name", STRING), COMMA, KEY_PATH, EQUAL),
-        seq(field("key_path", STRING), RR_BRACKET),
+    create_column_master_key: $ => seq(
+      CREATE,
+      COLUMN,
+      MASTER,
+      KEY,
+      field("key_name", $.id_),
+      WITH,
+      LR_BRACKET,
+      KEY_STORE_PROVIDER_NAME,
+      EQUAL,
+      field("key_store_provider_name", STRING),
+      COMMA,
+      KEY_PATH,
+      EQUAL,
+      field("key_path", STRING),
+      RR_BRACKET
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-credential-transact-sql
-    alter_credential: $ => (
-            seq(ALTER, CREDENTIAL, field("credential_name", $.id_), WITH, IDENTITY, EQUAL, field("identity_name", STRING), optional(
-        seq(COMMA, SECRET, EQUAL, field("secret", STRING))
-        ),),
+    alter_credential: $ => seq(
+      ALTER,
+      CREDENTIAL,
+      field("credential_name", $.id_),
+      WITH,
+      IDENTITY,
+      EQUAL,
+      field("identity_name", STRING),
+      optional(seq(COMMA, SECRET, EQUAL, field("secret", STRING))),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-credential-transact-sql
-    create_credential: $ => (
-            seq(CREATE, CREDENTIAL, field("credential_name", $.id_), WITH, IDENTITY, EQUAL, field("identity_name", STRING), optional(
-        seq(COMMA, SECRET, EQUAL, field("secret", STRING))
-        ), optional(seq(FOR, CRYPTOGRAPHIC, PROVIDER, field("cryptographic_provider_name", $.id_)))),
+    create_credential: $ => seq(
+      CREATE,
+      CREDENTIAL,
+      field("credential_name", $.id_),
+      WITH,
+      IDENTITY,
+      EQUAL,
+      field("identity_name", STRING),
+      optional(seq(COMMA, SECRET, EQUAL, field("secret", STRING))),
+      optional(seq(FOR, CRYPTOGRAPHIC, PROVIDER, field("cryptographic_provider_name", $.id_)))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-cryptographic-provider-transact-sql
-    alter_cryptographic_provider: $ => (
-            seq(ALTER, CRYPTOGRAPHIC, PROVIDER, field("provider_name", $.id_), optional(
-        seq(FROM, FILE, EQUAL, field("crypto_provider_ddl_file", STRING))
-        ), optional(choice(seq(ENABLE, DISABLE),))),
+    alter_cryptographic_provider: $ => seq(
+      ALTER,
+      CRYPTOGRAPHIC,
+      PROVIDER,
+      field("provider_name", $.id_),
+      optional(seq(FROM, FILE, EQUAL, field("crypto_provider_ddl_file", STRING))),
+      optional(choice(seq(ENABLE, DISABLE)))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-cryptographic-provider-transact-sql
-    create_cryptographic_provider: $ => (
-            seq(CREATE, CRYPTOGRAPHIC, PROVIDER, field("provider_name", $.id_), FROM, FILE, EQUAL, field("path_of_DLL", STRING)),
+    create_cryptographic_provider: $ => seq(
+      CREATE,
+      CRYPTOGRAPHIC,
+      PROVIDER,
+      field("provider_name", $.id_),
+      FROM,
+      FILE,
+      EQUAL,
+      field("path_of_DLL", STRING)
     ),
 
     // https://learn.microsoft.com/en-us/sql/t-sql/statements/create-endpoint-transact-optional($.sql)view=sql-server-ver16
-    create_endpoint: $ => (
-            seq(CREATE, ENDPOINT, field("endpointname", $.id_), optional(seq(AUTHORIZATION, field("login", $.id_))), optional(
-        seq(STATE, EQUAL, $.state, =, choice(seq(STARTED, STOPPED, DISABLED),))
-        ), AS, TCP, LR_BRACKET, $.endpoint_listener_clause, RR_BRACKET, choice(
+    create_endpoint: $ => seq(
+      CREATE,
+      ENDPOINT,
+      field("endpointname", $.id_),
+      optional(seq(AUTHORIZATION, field("login", $.id_))),
+      optional(seq(STATE, EQUAL, field("state", choice(STARTED, STOPPED, DISABLED)))),
+      AS,
+      TCP,
+      LR_BRACKET,
+      $.endpoint_listener_clause,
+      RR_BRACKET,
+      choice(
         seq(FOR, TSQL, LR_BRACKET, RR_BRACKET),
-        seq(FOR, SERVICE_BROKER, LR_BRACKET, $.endpoint_authentication_clause, (),
-        seq(optional(COMMA), $.endpoint_encryption_alogorithm_clause),
-        seq()?, (optional(COMMA), MESSAGE_FORWARDING, EQUAL, (ENABLED, DISABLED))?, (),
-        seq(optional(COMMA), MESSAGE_FORWARD_SIZE, EQUAL, DECIMAL),
-        seq()?, RR_BRACKET),
-        seq(FOR, DATABASE_MIRRORING, LR_BRACKET, $.endpoint_authentication_clause, (),
-        seq(optional(COMMA), $.endpoint_encryption_alogorithm_clause),
-        seq()?, optional(COMMA), ROLE, EQUAL, choice(seq(WITNESS, PARTNER, ALL),), RR_BRACKET)
-        ),),
+        seq(
+          FOR,
+          SERVICE_BROKER,
+          LR_BRACKET,
+          $.endpoint_authentication_clause,
+          optional(seq(optional(COMMA), $.endpoint_encryption_alogorithm_clause)),
+          optional(seq(optional(COMMA), MESSAGE_FORWARDING, EQUAL, choice(ENABLED, DISABLED))),
+          optional(seq(optional(COMMA), MESSAGE_FORWARD_SIZE, EQUAL, DECIMAL)),
+          RR_BRACKET
+        ),
+        seq(
+          FOR,
+          DATABASE_MIRRORING,
+          LR_BRACKET,
+          $.endpoint_authentication_clause,
+          seq(optional(COMMA), $.endpoint_encryption_alogorithm_clause),
+          optional(COMMA),
+          ROLE,
+          EQUAL,
+          choice(WITNESS, PARTNER, ALL),
+          RR_BRACKET
+        )
+      ),
     ),
 
-    endpoint_encryption_alogorithm_clause: $ => (
-            seq(ENCRYPTION, EQUAL, choice(seq(DISABLED, SUPPORTED, REQUIRED),), optional(seq(ALGORITHM, choice(seq(AES, RC4?, RC4, AES?),)))),
+    endpoint_encryption_alogorithm_clause: $ => seq(
+      ENCRYPTION,
+      EQUAL,
+      choice(DISABLED, SUPPORTED, REQUIRED),
+      optional(seq(ALGORITHM, choice(seq(AES, optional(RC4)), seq(RC4, optional(AES)))))
     ),
 
-    endpoint_authentication_clause: $ => (
-            seq(AUTHENTICATION, EQUAL, choice(
-        seq(WINDOWS, optional(choice(seq(NTLM, KERBEROS, NEGOTIATE),)), (CERTIFICATE, field("cert_name", $.id_))?),
-        seq(CERTIFICATE, field("cert_name", $.id_), WINDOWS?, optional(choice(seq(NTLM, KERBEROS, NEGOTIATE),)))
-        ),),
+    endpoint_authentication_clause: $ => seq(
+      AUTHENTICATION,
+      EQUAL,
+      choice(
+        seq(WINDOWS, optional(choice(NTLM, KERBEROS, NEGOTIATE)), optional(seq(CERTIFICATE, field("cert_name", $.id_)))),
+        seq(CERTIFICATE, field("cert_name", $.id_), optional(WINDOWS), optional(choice(NTLM, KERBEROS, NEGOTIATE)))
+      )
     ),
 
-    endpoint_listener_clause: $ => (
-            seq(LISTENER_PORT, EQUAL, field("port", DECIMAL), optional(
-        seq(COMMA, LISTENER_IP, EQUAL, choice(seq(ALL, '(', choice(seq($.ipv4, =, IPV4_ADDR, ipv6, =, STRING),), ')'),))
-        ),),
+    endpoint_listener_clause: $ => seq(
+      LISTENER_PORT,
+      EQUAL,
+      field("port", DECIMAL),
+      optional(
+        seq(
+          COMMA,
+          LISTENER_IP,
+          EQUAL,
+          choice(ALL, seq('(', choice(field("ipv4", IPV4_ADDR), field("ipv6", STRING)), ')'))
+        )
+      ),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-event-notification-transact-sql
     create_event_notification: $ => (
-            seq(CREATE, EVENT, NOTIFICATION, field("event_notification_name", $.id_), ON, choice(
-            SERVER,
-            DATABASE,
-        seq(QUEUE, field("queue_name", $.id_))
-        ), optional(seq(WITH, FAN_IN),), FOR, repeat1(seq(optional(COMMA), field("event_type_or_group", $.id_))), TO, SERVICE, field("broker_service", STRING), COMMA, $.broker_service_specifier_or_current_database, =),
-            STRIN,
+        seq(
+          CREATE,
+          EVENT,
+          NOTIFICATION,
+          field("event_notification_name", $.id_),
+          ON,
+          choice(SERVER, DATABASE, seq(QUEUE, field("queue_name", $.id_))),
+          optional(seq(WITH, FAN_IN)),
+          FOR,
+          repeat1(seq(optional(COMMA), field("event_type_or_group", $.id_))),
+          TO,
+          SERVICE,
+          field("broker_service", STRING),
+          COMMA,
+          field("broker_service_specifier_or_current_database", STRING),
+        ),
     ),
+
+    // MARKER
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-event-session-transact-sql
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-event-session-transact-sql
     // todo: not implemented
-    create_or_alter_event_session: $ => (
-            seq(optional(choice(
-        seq(WITH, LR_BRACKET, (optional(COMMA), MAX_MEMORY, EQUAL, field("max_memory", DECIMAL), (KB, MB))?, (),
-        seq(optional(COMMA), EVENT_RETENTION_MODE, EQUAL, (),
-                    ALLOW_SINGLE_EVENT_LOSS,
-                    ALLOW_MULTIPLE_EVENT_LOSS,
-                    NO_EVENT_LOS,
-                ,
-        seq()?, (),
-        seq(optional(COMMA), MAX_DISPATCH_LATENCY, EQUAL, (),
-        seq(field("max_dispatch_latency_seconds", DECIMAL), SECONDS),
-                    INFINIT,
-                ,
-        seq()?, (optional(COMMA), MAX_EVENT_SIZE, EQUAL, field("max_event_size", DECIMAL), (KB, MB))?, (),
-        seq(optional(COMMA), MEMORY_PARTITION_MODE, EQUAL, (NONE, PER_NODE, PER_CPU)),
-        seq()?, (optional(COMMA), TRACK_CAUSALITY, EQUAL, (ON, OFF))?, optional(seq(optional(COMMA), STARTUP_STATE, EQUAL, choice(seq(ON, OFF),))), RR_BRACKET)
-        ),)6, EVENT, SESSION, field("event_session_name", $.id_), ON, SERVER, optional(choice(
-        seq(WITH, LR_BRACKET, (optional(COMMA), MAX_MEMORY, EQUAL, field("max_memory", DECIMAL), (KB, MB))?, (),
-        seq(optional(COMMA), EVENT_RETENTION_MODE, EQUAL, (),
-                    ALLOW_SINGLE_EVENT_LOSS,
-                    ALLOW_MULTIPLE_EVENT_LOSS,
-                    NO_EVENT_LOS,
-                ,
-        seq()?, (),
-        seq(optional(COMMA), MAX_DISPATCH_LATENCY, EQUAL, (),
-        seq(field("max_dispatch_latency_seconds", DECIMAL), SECONDS),
-                    INFINIT,
-                ,
-        seq()?, (optional(COMMA), MAX_EVENT_SIZE, EQUAL, field("max_event_size", DECIMAL), (KB, MB))?, (),
-        seq(optional(COMMA), MEMORY_PARTITION_MODE, EQUAL, (NONE, PER_NODE, PER_CPU)),
-        seq()?, (optional(COMMA), TRACK_CAUSALITY, EQUAL, (ON, OFF))?, optional(seq(optional(COMMA), STARTUP_STATE, EQUAL, choice(seq(ON, OFF),))), RR_BRACKET)
-        ),)2, optional(choice(
-        seq(WITH, LR_BRACKET, (optional(COMMA), MAX_MEMORY, EQUAL, field("max_memory", DECIMAL), (KB, MB))?, (),
-        seq(optional(COMMA), EVENT_RETENTION_MODE, EQUAL, (),
-                    ALLOW_SINGLE_EVENT_LOSS,
-                    ALLOW_MULTIPLE_EVENT_LOSS,
-                    NO_EVENT_LOS,
-                ,
-        seq()?, (),
-        seq(optional(COMMA), MAX_DISPATCH_LATENCY, EQUAL, (),
-        seq(field("max_dispatch_latency_seconds", DECIMAL), SECONDS),
-                    INFINIT,
-                ,
-        seq()?, (optional(COMMA), MAX_EVENT_SIZE, EQUAL, field("max_event_size", DECIMAL), (KB, MB))?, (),
-        seq(optional(COMMA), MEMORY_PARTITION_MODE, EQUAL, (NONE, PER_NODE, PER_CPU)),
-        seq()?, (optional(COMMA), TRACK_CAUSALITY, EQUAL, (ON, OFF))?, optional(seq(optional(COMMA), STARTUP_STATE, EQUAL, choice(seq(ON, OFF),))), RR_BRACKET)
-        ),)1, repeat(
-        seq((ADD, TARGET, (field("event_module_guid", $.id_), DOT)?, field("event_package_name", $.id_), DOT, field("target_name", $.id_)), repeat(
-        seq(LR_BRACKET, SET, repeat1(
-        seq(optional(COMMA), field("target_parameter_name", $.id_), EQUAL, choice(seq(LR_BRACKET?, DECIMAL, RR_BRACKET?, STRING),))
-                ), RR_BRACKET)
-            ),)
-        ), repeat(seq(DROP, TARGET, optional(seq(field("event_module_guid", $.id_), DOT),), field("event_package_name", $.id_), DOT, field("target_name", $.id_))), optional(choice(
-        seq(WITH, LR_BRACKET, (optional(COMMA), MAX_MEMORY, EQUAL, field("max_memory", DECIMAL), (KB, MB))?, (),
-        seq(optional(COMMA), EVENT_RETENTION_MODE, EQUAL, (),
-                    ALLOW_SINGLE_EVENT_LOSS,
-                    ALLOW_MULTIPLE_EVENT_LOSS,
-                    NO_EVENT_LOS,
-                ,
-        seq()?, (),
-        seq(optional(COMMA), MAX_DISPATCH_LATENCY, EQUAL, (),
-        seq(field("max_dispatch_latency_seconds", DECIMAL), SECONDS),
-                    INFINIT,
-                ,
-        seq()?, (optional(COMMA), MAX_EVENT_SIZE, EQUAL, field("max_event_size", DECIMAL), (KB, MB))?, (),
-        seq(optional(COMMA), MEMORY_PARTITION_MODE, EQUAL, (NONE, PER_NODE, PER_CPU)),
-        seq()?, (optional(COMMA), TRACK_CAUSALITY, EQUAL, (ON, OFF))?, optional(seq(optional(COMMA), STARTUP_STATE, EQUAL, choice(seq(ON, OFF),))), RR_BRACKET)
-        ),), optional(seq(STATE, EQUAL, choice(seq(START, STOP),)))),
+    create_or_alter_event_session: $ => seq(
+      choice(CREATE, ALTER),
+      EVENT,
+      SESSION,
+      field('event_session_name', $.id_),
+      ON,
+      SERVER,
+
+      repeat(
+        seq(
+          optional(COMMA),
+          ADD,
+          EVENT,
+
+          optional(
+            seq(
+              field('event_module_guid', $.id_),
+              DOT
+            )
+          ),
+
+          field('event_package_name', $.id_),
+          DOT,
+          field('event_name', $.id_),
+
+          repeat(
+            seq(
+              LR_BRACKET,
+
+              optional(
+                seq(
+                  SET,
+                  repeat(
+                    seq(
+                      optional(COMMA),
+                      field('event_customizable_attributue', $.id_),
+                      EQUAL,
+                      choice($.DECIMAL, $.STRING)
+                    )
+                  )
+                )
+              ),
+
+              repeat(
+                seq(
+                  ACTION,
+                  LR_BRACKET,
+
+                  repeat1(
+                    seq(
+                      optional(COMMA),
+
+                      optional(
+                        seq(
+                          field('event_module_guid', $.id_),
+                          DOT
+                        )
+                      ),
+
+                      field('event_package_name', $.id_),
+                      DOT,
+                      field('action_name', $.id_)
+                    )
+                  ),
+
+                  RR_BRACKET
+                )
+              ),
+
+              optional($.event_session_predicate_expression),
+
+              RR_BRACKET
+            )
+          )
+        )
+      ),
+
+      repeat(
+        seq(
+          optional(COMMA),
+          DROP,
+          EVENT,
+
+          optional(
+            seq(
+              field('event_module_guid', $.id_),
+              DOT
+            )
+          ),
+
+          field('event_package_name', $.id_),
+          DOT,
+          field('event_name', $.id_)
+        )
+      ),
+
+      repeat(
+        seq(
+          ADD,
+          TARGET,
+
+          optional(
+            seq(
+              field('event_module_guid', $.id_),
+              DOT
+            )
+          ),
+
+          field('event_package_name', $.id_),
+          DOT,
+          field('target_name', $.id_),
+
+          repeat(
+            seq(
+              LR_BRACKET,
+              SET,
+
+              repeat1(
+                seq(
+                  optional(COMMA),
+                  field('target_parameter_name', $.id_),
+                  EQUAL,
+
+                  choice(
+                    seq(
+                      optional(LR_BRACKET),
+                      $.DECIMAL,
+                      optional(RR_BRACKET)
+                    ),
+                    $.STRING
+                  )
+                )
+              ),
+
+              RR_BRACKET
+            )
+          )
+        )
+      ),
+
+      repeat(
+        seq(
+          DROP,
+          TARGET,
+
+          optional(
+            seq(
+              field('event_module_guid', $.id_),
+              DOT
+            )
+          ),
+
+          field('event_package_name', $.id_),
+          DOT,
+          field('target_name', $.id_)
+        )
+      ),
+
+      optional(
+        seq(
+          WITH,
+          LR_BRACKET,
+
+          optional(
+            seq(
+              optional(COMMA),
+              MAX_MEMORY,
+              EQUAL,
+              field('max_memory', $.DECIMAL),
+              choice(KB, MB)
+            )
+          ),
+
+          optional(
+            seq(
+              optional(COMMA),
+              EVENT_RETENTION_MODE,
+              EQUAL,
+              choice(
+                ALLOW_SINGLE_EVENT_LOSS,
+                ALLOW_MULTIPLE_EVENT_LOSS,
+                NO_EVENT_LOSS
+              )
+            )
+          ),
+
+          optional(
+            seq(
+              optional(COMMA),
+              MAX_DISPATCH_LATENCY,
+              EQUAL,
+              choice(
+                seq(
+                  field('max_dispatch_latency_seconds', $.DECIMAL),
+                  SECONDS
+                ),
+                INFINITE
+              )
+            )
+          ),
+
+          optional(
+            seq(
+              optional(COMMA),
+              MAX_EVENT_SIZE,
+              EQUAL,
+              field('max_event_size', $.DECIMAL),
+              choice(KB, MB)
+            )
+          ),
+
+          optional(
+            seq(
+              optional(COMMA),
+              MEMORY_PARTITION_MODE,
+              EQUAL,
+              choice(NONE, PER_NODE, PER_CPU)
+            )
+          ),
+
+          optional(
+            seq(
+              optional(COMMA),
+              TRACK_CAUSALITY,
+              EQUAL,
+              choice(ON, OFF)
+            )
+          ),
+
+          optional(
+            seq(
+              optional(COMMA),
+              STARTUP_STATE,
+              EQUAL,
+              choice(ON, OFF)
+            )
+          ),
+
+          RR_BRACKET
+        )
+      ),
+
+      optional(
+        seq(
+          STATE,
+          EQUAL,
+          choice(START, STOP)
+        )
+      )
     ),
 
     event_session_predicate_expression: $ => (
