@@ -3111,23 +3111,21 @@ module.exports = grammar({
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-event-notification-transact-sql
-    create_event_notification: $ => (
-        seq(
-          CREATE,
-          EVENT,
-          NOTIFICATION,
-          field("event_notification_name", $.id_),
-          ON,
-          choice(SERVER, DATABASE, seq(QUEUE, field("queue_name", $.id_))),
-          optional(seq(WITH, FAN_IN)),
-          FOR,
-          repeat1(seq(optional(COMMA), field("event_type_or_group", $.id_))),
-          TO,
-          SERVICE,
-          field("broker_service", STRING),
-          COMMA,
-          field("broker_service_specifier_or_current_database", STRING),
-        ),
+    create_event_notification: $ => seq(
+      CREATE,
+      EVENT,
+      NOTIFICATION,
+      field("event_notification_name", $.id_),
+      ON,
+      choice(SERVER, DATABASE, seq(QUEUE, field("queue_name", $.id_))),
+      optional(seq(WITH, FAN_IN)),
+      FOR,
+      repeat1(seq(optional(COMMA), field("event_type_or_group", $.id_))),
+      TO,
+      SERVICE,
+      field("broker_service", STRING),
+      COMMA,
+      field("broker_service_specifier_or_current_database", STRING),
     ),
 
     // MARKER
@@ -3199,13 +3197,10 @@ module.exports = grammar({
                       field('action_name', $.id_)
                     )
                   ),
-
                   RR_BRACKET
                 )
               ),
-
-              optional($.event_session_predicate_expression),
-
+              optional(seq(WHERE, $.event_session_predicate_expression)),
               RR_BRACKET
             )
           )
@@ -3386,8 +3381,11 @@ module.exports = grammar({
       )
     ),
 
-    event_session_predicate_expression: $ => (
-        ########,
+    event_session_predicate_expression: $ => seq(
+      optional(COMMA),
+      optional(choice(AND, OR)),
+      optional(NOT),
+      choice($.event_session_predicate_factor, seq(LR_BRACKET, $.event_session_predicate_expression, RR_BRACKET)),
     ),
 
     event_session_predicate_factor: $ => choice(
@@ -3395,43 +3393,87 @@ module.exports = grammar({
         seq(LR_BRACKET, $.event_session_predicate_expression, RR_BRACKET),
     ),
 
-    event_session_predicate_leaf: $ => (
+    event_session_predicate_leaf: $ => choice(
+      field("event_field_name", $.id_),
+
+      seq(
         choice(
-        seq(field("event_field_name", $.id_)),
-            ,
-        seq(field("event_field_name", $.id_)),
-                ,
-        seq((field("event_module_guid", $.id_), DOT)?, field("event_package_name", $.id_), DOT, field("predicate_source_name", $.id_)),
-                ,
-        seq(), (),
-                EQUAL,
-        seq((LESS, GREATER)),
-        seq((EXCLAMATION, EQUAL)),
-                GREATER,
-        seq((GREATER, EQUAL)),
-                LESS,
-        seq(LESS, EQUAL),
-        seq(), choice(seq(DECIMAL, STRING),))
+          field("event_field_name", $.id_),
+          seq(
+            optional(seq(field("event_module_guid", $.id_), DOT)),
+            field("event_package_name", $.id_),
+            DOT,
+            field("predicate_source_name", $.id_)
+          )
         ),
-        seq((field("event_module_guid", $.id_), DOT)?, field("event_package_name", $.id_), DOT, field("predicate_compare_name", $.id_), LR_BRACKET, choice(
-        seq(field("event_field_name", $.id_)),
-        seq(((field("event_module_guid", $.id_), DOT)?, field("event_package_name", $.id_), DOT, field("predicate_source_name", $.id_)), COMMA, choice(
-                DECIMAL,
-                STRIN
-            ),)
-        ), RR_BRACKET),
+        choice(
+          EQUAL,
+          seq(LESS, GREATER),
+          seq(EXCLAMATION, EQUAL),
+          GREATER,
+          seq(GREATER, EQUAL),
+          LESS,
+          seq(LESS, EQUAL)
+        ),
+        choice(DECIMAL, STRING)
+      ),
+
+      seq(
+        optional(seq(field("event_module_guid", $.id_), DOT)),
+        field("event_package_name", $.id_),
+        DOT,
+        field("predicate_compare_name", $.id_),
+        LR_BRACKET,
+        choice(
+          field("event_field_name", $.id_),
+          seq(
+            optional(seq(field("event_module_guid", $.id_), DOT)),
+            field("event_package_name", $.id_),
+            DOT,
+            field("predicate_source_name", $.id_),
+            COMMA,
+            choice(DECIMAL, STRING)
+          )
+        ),
+        RR_BRACKET
+      )
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-external-data-source-transact-sql
-    alter_external_data_source: $ => (
-            seq(ALTER, EXTERNAL, DATA, SOURCE, field("data_source_name", $.id_), SET, repeat1(choice(
-        seq(LOCATION, EQUAL, field("location", STRING), optional(COMMA)),
-        seq(RESOURCE_MANAGER_LOCATION, EQUAL, field("resource_manager_location", STRING), optional(COMMA)),
-        seq(CREDENTIAL, EQUAL, field("credential_name", $.id_))
-        ),)),
-        seq(ALTER, EXTERNAL, DATA, SOURCE, field("data_source_name", $.id_), WITH, LR_BRACKET, TYPE, EQUAL, BLOB_STORAGE, COMMA, LOCATION, EQUAL, field("location", STRING), optional(
-        seq(COMMA, CREDENTIAL, EQUAL, field("credential_name", $.id_))
-        ), RR_BRACKET),
+    alter_external_data_source: $ => choice(
+      seq(
+        ALTER,
+        EXTERNAL,
+        DATA,
+        SOURCE,
+        field("data_source_name", $.id_),
+        SET,
+        repeat1(
+          choice(
+            seq(LOCATION, EQUAL, field("location", STRING), optional(COMMA)),
+            seq(RESOURCE_MANAGER_LOCATION, EQUAL, field("resource_manager_location", STRING), optional(COMMA)),
+            seq(CREDENTIAL, EQUAL, field("credential_name", $.id_))
+          )
+        ),
+      ),
+      seq(
+        ALTER,
+        EXTERNAL,
+        DATA,
+        SOURCE,
+        field("data_source_name", $.id_),
+        WITH,
+        LR_BRACKET,
+        TYPE,
+        EQUAL,
+        BLOB_STORAGE,
+        COMMA,
+        LOCATION,
+        EQUAL,
+        field("location", STRING),
+        optional(seq(COMMA, CREDENTIAL, EQUAL, field("credential_name", $.id_))),
+        RR_BRACKET
+      ),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-external-library-transact-sql
