@@ -3477,265 +3477,462 @@ module.exports = grammar({
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-external-library-transact-sql
-    alter_external_library: $ => (
-            seq(ALTER, EXTERNAL, LIBRARY, field("library_name", $.id_), optional(seq(AUTHORIZATION, field("owner_name", $.id_))), choice(seq(SET, ADD),), choice(
-        seq(LR_BRACKET, CONTENT, EQUAL, (field("client_library", STRING), BINARY, NONE), (),
-        seq(COMMA, PLATFORM, EQUAL, (WINDOWS, LINUX)?, RR_BRACKET),
-        seq(), WITH, repeat1(choice(
-        seq(optional(COMMA), LANGUAGE, EQUAL, choice(seq(R, PYTHON),)),
-        seq(DATA_SOURCE, EQUAL, field("external_data_source_name", $.id_))
-            ),), RR_BRACKET)
-        ),),
+    alter_external_library: $ => seq(
+      ALTER,
+      EXTERNAL,
+      LIBRARY,
+      field("library_name", $.id_),
+      optional(seq(AUTHORIZATION, field("owner_name", $.id_))),
+      choice(seq(SET, ADD)),
+      choice(seq(
+        LR_BRACKET,
+        CONTENT,
+        EQUAL,
+        field("client_library", choice(STRING, BINARY, NONE)),
+        seq(COMMA, PLATFORM, EQUAL, optional(choice(WINDOWS, LINUX)), RR_BRACKET),
+        WITH,
+        repeat1(choice(
+          seq(optional(COMMA), LANGUAGE, EQUAL, choice(seq(R, PYTHON))),
+          seq(DATA_SOURCE, EQUAL, field("external_data_source_name", $.id_))
+        )),
+        RR_BRACKET
+      )),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-external-library-transact-sql
-    create_external_library: $ => (
-            seq(CREATE, EXTERNAL, LIBRARY, field("library_name", $.id_), optional(seq(AUTHORIZATION, field("owner_name", $.id_))), FROM, choice(
-        seq(optional(COMMA), LR_BRACKET?, (CONTENT, EQUAL)?, (field("client_library", STRING), BINARY, NONE), optional(
-        seq(COMMA, PLATFORM, EQUAL, optional(choice(seq(WINDOWS, LINUX),)), RR_BRACKET)
-            ),)
-        ), optional(
-        seq(WITH, repeat1(choice(
-        seq(optional(COMMA), LANGUAGE, EQUAL, choice(seq(R, PYTHON),)),
-        seq(DATA_SOURCE, EQUAL, field("external_data_source_name", $.id_))
-            ),), RR_BRACKET)
-        ),),
+    create_external_library: $ => seq(
+      CREATE,
+      EXTERNAL,
+      LIBRARY,
+      field("library_name", $.id_),
+      optional(seq(AUTHORIZATION, field("owner_name", $.id_))),
+      FROM,
+      choice(seq(
+        optional(COMMA),
+        optional(LR_BRACKET),
+        optional(choice(CONTENT, EQUAL)),
+        field("client_library", choice(STRING, BINARY, NONE)),
+        optional(seq(COMMA, PLATFORM, EQUAL, optional(choice(WINDOWS, LINUX)), RR_BRACKET)),
+      )),
+      optional(seq(
+        WITH,
+        repeat1(choice(
+          seq(optional(COMMA), LANGUAGE, EQUAL, choice(R, PYTHON)),
+          seq(DATA_SOURCE, EQUAL, field("external_data_source_name", $.id_))
+        )),
+        RR_BRACKET
+      )),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-external-resource-pool-transact-sql
-    alter_external_resource_pool: $ => (
-            seq(ALTER, EXTERNAL, RESOURCE, POOL, choice(seq(field("pool_name", $.id_), DEFAULT_DOUBLE_QUOTE),), WITH, LR_BRACKET, MAX_CPU_PERCENT, EQUAL, field("max_cpu_percent", DECIMAL), choice(
-        seq(optional(COMMA), AFFINITY, CPU, EQUAL, (AUTO, (optional(COMMA), DECIMAL, TO, DECIMAL, COMMA, DECIMAL)+)),
-        seq(NUMANODE, EQUAL, repeat1(choice(seq(optional(COMMA), DECIMAL, TO, DECIMAL, optional(COMMA), DECIMAL),)))
-        ), optional(seq(optional(COMMA), MAX_MEMORY_PERCENT, EQUAL, field("max_memory_percent", DECIMAL))), optional(
-        seq(optional(COMMA), MAX_PROCESSES, EQUAL, field("max_processes", DECIMAL))
-        ), RR_BRACKET),
+    alter_external_resource_pool: $ => seq(
+      ALTER,
+      EXTERNAL,
+      RESOURCE,
+      POOL,
+      choice(field("pool_name", choice($.id_, DEFAULT_DOUBLE_QUOTE))),
+      WITH,
+      LR_BRACKET,
+      MAX_CPU_PERCENT,
+      EQUAL,
+      field("max_cpu_percent", DECIMAL),
+      choice(
+        seq(optional(COMMA), AFFINITY, CPU, EQUAL, choice(AUTO, repeat1(choice(seq(optional(COMMA), DECIMAL, TO, DECIMAL), seq(COMMA, DECIMAL))))),
+        seq(NUMANODE, EQUAL, repeat1(choice(seq(optional(COMMA), DECIMAL, TO, DECIMAL), seq(optional(COMMA), DECIMAL))))
+      ),
+      optional(seq(optional(COMMA), MAX_MEMORY_PERCENT, EQUAL, field("max_memory_percent", DECIMAL))),
+      optional(seq(optional(COMMA), MAX_PROCESSES, EQUAL, field("max_processes", DECIMAL))),
+      RR_BRACKET
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-external-resource-pool-transact-sql
-    create_external_resource_pool: $ => (
-            seq(CREATE, EXTERNAL, RESOURCE, POOL, field("pool_name", $.id_), WITH, LR_BRACKET, MAX_CPU_PERCENT, EQUAL, field("max_cpu_percent", DECIMAL), choice(
-        seq(optional(COMMA), AFFINITY, CPU, EQUAL, (AUTO, (optional(COMMA), DECIMAL, TO, DECIMAL, COMMA, DECIMAL)+)),
-        seq(NUMANODE, EQUAL, repeat1(choice(seq(optional(COMMA), DECIMAL, TO, DECIMAL, optional(COMMA), DECIMAL),)))
-        ), optional(seq(optional(COMMA), MAX_MEMORY_PERCENT, EQUAL, field("max_memory_percent", DECIMAL))), optional(
-        seq(optional(COMMA), MAX_PROCESSES, EQUAL, field("max_processes", DECIMAL))
-        ), RR_BRACKET),
+    create_external_resource_pool: $ => seq(
+      CREATE,
+      EXTERNAL,
+      RESOURCE,
+      POOL,
+      field("pool_name", $.id_),
+      WITH,
+      LR_BRACKET,
+      MAX_CPU_PERCENT,
+      EQUAL,
+      field("max_cpu_percent", DECIMAL),
+      choice(
+        seq(optional(COMMA), AFFINITY, CPU, EQUAL, choice(AUTO, repeat1(
+          seq(optional(COMMA), DECIMAL, TO, DECIMAL),
+          seq(COMMA, DECIMAL)
+        ))),
+        seq(NUMANODE, EQUAL, repeat1(choice(seq(optional(COMMA), DECIMAL, TO, DECIMAL), seq(optional(COMMA), DECIMAL))))
+      ),
+      optional(seq(optional(COMMA), MAX_MEMORY_PERCENT, EQUAL, field("max_memory_percent", DECIMAL))),
+      optional(seq(optional(COMMA), MAX_PROCESSES, EQUAL, field("max_processes", DECIMAL))),
+      RR_BRACKET
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-fulltext-catalog-transact-sql
-    alter_fulltext_catalog: $ => (
-            seq(ALTER, FULLTEXT, CATALOG, field("catalog_name", $.id_), choice(
-        seq(REBUILD, optional(seq(WITH, ACCENT_SENSITIVITY, EQUAL, choice(seq(ON, OFF),)))),
-            REORGANIZE,
+    alter_fulltext_catalog: $ => seq(
+      ALTER,
+      FULLTEXT,
+      CATALOG,
+      field("catalog_name", $.id_),
+      choice(
+        seq(REBUILD, optional(seq(WITH, ACCENT_SENSITIVITY, EQUAL, choice(ON, OFF)))),
+        REORGANIZE,
         seq(AS, DEFAULT)
-        ),),
+      )
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-fulltext-catalog-transact-sql
-    create_fulltext_catalog: $ => (
-            seq(CREATE, FULLTEXT, CATALOG, field("catalog_name", $.id_), optional(seq(ON, FILEGROUP, field("filegroup", $.id_))), optional(
-        seq(IN, PATH, field("rootpath", STRING))
-        ), optional(seq(WITH, ACCENT_SENSITIVITY, EQUAL, choice(seq(ON, OFF),))), optional(seq(AS, DEFAULT),), optional(seq(AUTHORIZATION, field("owner_name", $.id_)),)),
+    create_fulltext_catalog: $ => seq(
+      CREATE,
+      FULLTEXT,
+      CATALOG,
+      field("catalog_name", $.id_),
+      optional(seq(ON, FILEGROUP, field("filegroup", $.id_))),
+      optional(seq(IN, PATH, field("rootpath", STRING))),
+      optional(seq(WITH, ACCENT_SENSITIVITY, EQUAL, choice(ON, OFF))),
+      optional(AS, DEFAULT),
+      optional(seq(AUTHORIZATION, field("owner_name", $.id_)))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-fulltext-stoplist-transact-sql
-    alter_fulltext_stoplist: $ => (
-            seq(ALTER, FULLTEXT, STOPLIST, field("stoplist_name", $.id_), choice(
-        seq(ADD, field("stopword", STRING), LANGUAGE, (STRING, DECIMAL, BINARY)),
+    alter_fulltext_stoplist: $ => seq(
+      ALTER,
+      FULLTEXT,
+      STOPLIST,
+      field("stoplist_name", $.id_),
+      choice(
+        seq(ADD, field("stopword", STRING), LANGUAGE, choice(STRING, DECIMAL, BINARY)),
         seq(DROP, choice(
-        seq(field("stopword", STRING), LANGUAGE, (#######,)),
-        seq(ALL, (#######,)),
-                AL
-            ),)
-        ),),
+          seq(field("stopword", STRING), LANGUAGE, choice(STRING, DECIMAL, BINARY)),
+          seq(ALL, choice(STRING, DECIMAL, BINARY)),
+          ALL
+        ))
+      ),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-fulltext-stoplist-transact-sql
-    create_fulltext_stoplist: $ => (
-            seq(CREATE, FULLTEXT, STOPLIST, field("stoplist_name", $.id_), optional(
-        seq(FROM, choice(seq(optional(seq(field("database_name", $.id_), DOT),), field("source_stoplist_name", $.id_), SYSTEM, STOPLIST),))
-        ), optional(seq(AUTHORIZATION, field("owner_name", $.id_)))),
+    create_fulltext_stoplist: $ => seq(
+      CREATE,
+      FULLTEXT,
+      STOPLIST,
+      field("stoplist_name", $.id_),
+      optional(seq(FROM, choice(seq(
+        optional(seq(field("database_name", $.id_), DOT)),
+        field("source_stoplist_name", $.id_),
+        SYSTEM,
+        STOPLIST
+      )))),
+      optional(seq(AUTHORIZATION, field("owner_name", $.id_))),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-login-transact-sql
-    alter_login_sql_server: $ => (
-            seq(ALTER, LOGIN, field("login_name", $.id_), choice(
-        seq((ENABLE, DISABLE)?),
-        seq(WITH, (),
-        seq((PASSWORD, EQUAL, (, field("password", STRING), field("password_hash", BINARY), HASHED)), (),
-                    MUST_CHANGE,
-                    UNLOC
-                ),
-        seq()?, (OLD_PASSWORD, EQUAL, field("old_password", STRING), (MUST_CHANGE, UNLOCK)*)?, (),
-        seq(DEFAULT_DATABASE, EQUAL, field("default_database", $.id_)),
-        seq()?, (DEFAULT_LANGUAGE, EQUAL, field("default_laguage", $.id_))?, (NAME, EQUAL, field("login_name", $.id_))?, (),
-        seq(CHECK_POLICY, EQUAL, (ON, OFF)),
-        seq()?, (CHECK_EXPIRATION, EQUAL, (ON, OFF))?, (CREDENTIAL, EQUAL, field("credential_name", $.id_))?, (),
-        seq(NO, CREDENTIAL)
-            ),?,
-        seq(choice(seq(ADD, DROP),), CREDENTIAL, field("credential_name", $.id_))
-        ),),
+    alter_login_sql_server: $ => seq(
+      ALTER,
+      LOGIN,
+      field("login_name", $.id_),
+      choice(
+        optional(choice(ENABLE, DISABLE)),
+        seq(
+          WITH,
+          seq(
+            repeat(seq(PASSWORD, EQUAL, choice(field("password", STRING), seq(field("password_hash", BINARY), HASHED)))),
+            repeat(choice(MUST_CHANGE, UNLOCK)),
+            optional(seq(OLD_PASSWORD, EQUAL, field("old_password", STRING), repeat(choice(MUST_CHANGE, UNLOCK)))),
+            optional(seq(DEFAULT_DATABASE, EQUAL, field("default_database", $.id_))),
+            optional(seq(DEFAULT_LANGUAGE, EQUAL, field("default_language", $.id_))),
+            optional(seq(NAME, EQUAL, field("login_name", $.id_))),
+            optional(seq(CHECK_POLICY, EQUAL, choice(ON, OFF))),
+            optional(seq(CHECK_EXPIRATION, EQUAL, choice(ON, OFF))),
+            optional(seq(CREDENTIAL, EQUAL, field("credential_name", $.id_))),
+            optional(seq(NO, CREDENTIAL))
+          ),
+          seq(choice(ADD, DROP), CREDENTIAL, field("credential_name", $.id_))
+        ),
+      ),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-login-transact-sql
-    create_login_sql_server: $ => (
-            seq(CREATE, LOGIN, field("login_name", $.id_), choice(
-        seq(WITH, (),
-        seq((PASSWORD, EQUAL, (, field("password", STRING), field("password_hash", BINARY), HASHED)), (),
-                    MUST_CHANGE,
-                    UNLOC
-                ),
-        seq()?, (optional(COMMA), SID, EQUAL, field("sid", BINARY))?, (optional(COMMA), DEFAULT_DATABASE, EQUAL, field("default_database", $.id_))?, (),
-        seq(optional(COMMA), DEFAULT_LANGUAGE, EQUAL, field("default_laguage", $.id_)),
-        seq()?, (optional(COMMA), CHECK_EXPIRATION, EQUAL, (ON, OFF))?, (optional(COMMA), CHECK_POLICY, EQUAL, (ON, OFF))?, (),
-        seq(optional(COMMA), CREDENTIAL, EQUAL, field("credential_name", $.id_))
-            ),?,
-            #######
-        ),),
+    create_login_sql_server: $ => seq(
+      CREATE,
+      LOGIN,
+      field("login_name", $.id_),
+      choice(
+        seq(
+          WITH,
+          repeat(seq(PASSWORD, EQUAL, choice(field("password", STRING), seq(field("password_hash", BINARY), HASHED)))),
+          optional(seq(optional(COMMA), SID, EQUAL, field("sid", BINARY))),
+          optional(seq(optional(COMMA), DEFAULT_DATABASE, EQUAL, field("default_database", $.id_))),
+          optional(seq(optional(COMMA), DEFAULT_LANGUAGE, EQUAL, field("default_language", $.id_))),
+          optional(seq(optional(COMMA), CHECK_EXPIRATION, EQUAL, choice(ON, OFF))),
+          optional(seq(optional(COMMA), CHECK_POLICY, EQUAL, choice(ON, OFF))),
+          optional(seq(optional(COMMA), CREDENTIAL, EQUAL, field("credential_name", $.id_)))
+        ),
+        seq(
+          FROM,
+          choice(
+            seq(WINDOWS, seq(
+              WITH,
+              seq(optional(COMMA), DEFAULT_DATABASE, EQUAL, field("default_database", $.id_)),
+              seq(optional(COMMA), DEFAULT_LANGUAGE, EQUAL, field("default_language", STRING)),
+            )),
+            seq(CERTIFICATE, field("certname", $.id_)),
+            seq(ASYMMETRIC, KEY, field("asym_key_name", $.id_)),
+          )
+        )
+      ),
     ),
 
-    alter_login_azure_sql: $ => (
-            seq(ALTER, LOGIN, field("login_name", $.id_), choice(
-        seq((ENABLE, DISABLE)?),
+    alter_login_azure_sql: $ => seq(
+      ALTER,
+      LOGIN,
+      field("login_name", $.id_),
+      choice(
+        optional(choice(ENABLE, DISABLE)),
         seq(WITH, choice(
-        seq(PASSWORD, EQUAL, field("password", STRING), optional(seq(OLD_PASSWORD, EQUAL, field("old_password", STRING)))),
-        seq(NAME, EQUAL, field("login_name", $.id_))
-            ),)
-        ),),
+          seq(PASSWORD, EQUAL, field("password", STRING), optional(seq(OLD_PASSWORD, EQUAL, field("old_password", STRING)))),
+          seq(NAME, EQUAL, field("login_name", $.id_))
+        )),
+      ),
     ),
 
-    create_login_azure_sql: $ => (
-            seq(CREATE, LOGIN, field("login_name", $.id_), WITH, PASSWORD, EQUAL, STRING, optional(seq(SID, EQUAL, field("sid", BINARY)))),
+    create_login_azure_sql: $ => seq(
+      CREATE,
+      LOGIN,
+      field("login_name", $.id_),
+      WITH,
+      PASSWORD,
+      EQUAL,
+      STRING,
+      optional(seq(SID, EQUAL, field("sid", BINARY)))
     ),
 
-    alter_login_azure_sql_dw_and_pdw: $ => (
-            seq(ALTER, LOGIN, field("login_name", $.id_), choice(
-        seq((ENABLE, DISABLE)?),
+    alter_login_azure_sql_dw_and_pdw: $ => seq(
+      ALTER,
+      LOGIN,
+      field("login_name", $.id_),
+      choice(
+        optional(choice(ENABLE, DISABLE)),
         seq(WITH, choice(
-        seq(PASSWORD, EQUAL, field("password", STRING), optional(
-        seq(OLD_PASSWORD, EQUAL, field("old_password", STRING), repeat(choice(seq(MUST_CHANGE, UNLOCK),)))
-                ),),
-        seq(NAME, EQUAL, field("login_name", $.id_))
-            ),)
-        ),),
+          seq(PASSWORD, EQUAL, field("password", STRING), optional(seq(OLD_PASSWORD, EQUAL, field("old_password", STRING), repeat(choice(seq(MUST_CHANGE, UNLOCK)))))),
+          seq(NAME, EQUAL, field("login_name", $.id_))
+        )),
+      ),
     ),
 
-    create_login_pdw: $ => (
-            seq(CREATE, LOGIN, field("loginName", $.id_), choice(
-        seq(WITH, (seq(PASSWORD, EQUAL, field("password", STRING), (MUST_CHANGE)?, optional(seq(CHECK_POLICY, EQUAL, optional(choice(seq(ON, OFF),))))),)),
+    create_login_pdw: $ => seq(
+      CREATE,
+      LOGIN,
+      field("loginName", $.id_),
+      choice(
+        seq(WITH, seq(
+          PASSWORD,
+          EQUAL,
+          field("password", STRING),
+          optional(MUST_CHANGE),
+          optional(seq(CHECK_POLICY, EQUAL, optional(choice(ON, OFF))))
+        )),
         seq(FROM, WINDOWS)
-        ),),
+      ),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-master-key-transact-sql
-    alter_master_key_sql_server: $ => (
-            seq(ALTER, MASTER, KEY, choice(
-        seq((FORCE)?, REGENERATE, WITH, ENCRYPTION, BY, PASSWORD, EQUAL, field("password", STRING)),
-        seq((ADD, DROP), ENCRYPTION, BY, choice(
-        seq(SERVICE, MASTER, KEY),
-        seq(PASSWORD, EQUAL, field("encryption_password", STRING))
-            ),)
-        ),),
+    alter_master_key_sql_server: $ => seq(
+      ALTER,
+      MASTER,
+      KEY,
+      choice(
+        seq(optional(FORCE), REGENERATE, WITH, ENCRYPTION, BY, PASSWORD, EQUAL, field("password", STRING)),
+        seq(
+          choice(ADD, DROP),
+          ENCRYPTION,
+          BY,
+          choice(seq(SERVICE, MASTER, KEY), seq(PASSWORD, EQUAL, field("encryption_password", STRING)))
+        )
+      ),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-master-key-transact-sql
-    create_master_key_sql_server: $ => (
-            seq(CREATE, MASTER, KEY, ENCRYPTION, BY, PASSWORD, EQUAL, field("password", STRING)),
+    create_master_key_sql_server: $ => seq(
+      CREATE,
+      MASTER,
+      KEY,
+      ENCRYPTION,
+      BY,
+      PASSWORD,
+      EQUAL,
+      field("password", STRING)
     ),
 
-    alter_master_key_azure_sql: $ => (
-            seq(ALTER, MASTER, KEY, choice(
-        seq((FORCE)?, REGENERATE, WITH, ENCRYPTION, BY, PASSWORD, EQUAL, field("password", STRING)),
-        seq(ADD, ENCRYPTION, BY, choice(seq(SERVICE, MASTER, KEY, PASSWORD, EQUAL, field("encryption_password", STRING)))),
+    alter_master_key_azure_sql: $ => seq(
+      ALTER,
+      MASTER,
+      KEY,
+      choice(
+        seq(optional(FORCE), REGENERATE, WITH, ENCRYPTION, BY, PASSWORD, EQUAL, field("password", STRING)),
+        seq(ADD, ENCRYPTION, BY, choice(
+          seq(SERVICE, MASTER, KEY),
+          seq(PASSWORD, EQUAL, field("encryption_password", STRING))
+        )),
         seq(DROP, ENCRYPTION, BY, PASSWORD, EQUAL, field("encryption_password", STRING))
-        ),),
+      ),
     ),
 
-    create_master_key_azure_sql: $ => (
-            seq(CREATE, MASTER, KEY, optional(seq(ENCRYPTION, BY, PASSWORD, EQUAL, field("password", STRING)))),
+    create_master_key_azure_sql: $ => seq(
+      CREATE,
+      MASTER,
+      KEY,
+      optional(seq(ENCRYPTION, BY, PASSWORD, EQUAL, field("password", STRING)))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-message-type-transact-sql
-    alter_message_type: $ => (
-            seq(ALTER, MESSAGE, TYPE, field("message_type_name", $.id_), VALIDATION, EQUAL, choice(
-            NONE,
-            EMPTY,
-            WELL_FORMED_XML,
-        seq(VALID_XML, WITH, SCHEMA, COLLECTION, field("schema_collection_name", $.id_))
-        ),),
+    alter_message_type: $ => seq(
+      ALTER,
+      MESSAGE,
+      TYPE,
+      field("message_type_name", $.id_),
+      VALIDATION,
+      EQUAL,
+      choice(NONE, EMPTY, WELL_FORMED_XML, seq(VALID_XML, WITH, SCHEMA, COLLECTION, field("schema_collection_name", $.id_))),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-partition-function-transact-sql
-    alter_partition_function: $ => (
-            seq(ALTER, PARTITION, FUNCTION, field("partition_function_name", $.id_), LR_BRACKET, RR_BRACKET, choice(seq(SPLIT, MERGE),), RANGE, LR_BRACKET, DECIMAL, RR_BRACKET),
+    alter_partition_function: $ => seq(
+      ALTER,
+      PARTITION,
+      FUNCTION,
+      field("partition_function_name", $.id_),
+      LR_BRACKET,
+      RR_BRACKET,
+      choice(SPLIT, MERGE),
+      RANGE,
+      LR_BRACKET,
+      DECIMAL,
+      RR_BRACKET
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-partition-scheme-transact-sql
-    alter_partition_scheme: $ => (
-            seq(ALTER, PARTITION, SCHEME, field("partition_scheme_name", $.id_), NEXT, USED, optional(seq(field("file_group_name", $.id_)))),
+    alter_partition_scheme: $ => seq(
+      ALTER,
+      PARTITION,
+      SCHEME,
+      field("partition_scheme_name", $.id_),
+      NEXT,
+      USED,
+      optional(seq(field("file_group_name", $.id_)))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-remote-service-binding-transact-sql
-    alter_remote_service_binding: $ => (
-            seq(ALTER, REMOTE, SERVICE, BINDING, field("binding_name", $.id_), WITH, optional(seq(USER, EQUAL, field("user_name", $.id_))), optional(
-        seq(COMMA, ANONYMOUS, EQUAL, choice(seq(ON, OFF),))
-        ),),
+    alter_remote_service_binding: $ => seq(
+      ALTER,
+      REMOTE,
+      SERVICE,
+      BINDING,
+      field("binding_name", $.id_),
+      WITH,
+      optional(seq(USER, EQUAL, field("user_name", $.id_))),
+      optional(seq(COMMA, ANONYMOUS, EQUAL, choice(ON, OFF))),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-remote-service-binding-transact-sql
-    create_remote_service_binding: $ => (
-            seq(CREATE, REMOTE, SERVICE, BINDING, field("binding_name", $.id_), optional(seq(AUTHORIZATION, field("owner_name", $.id_))), TO, SERVICE, field("remote_service_name", STRING), WITH, optional(
-        seq(USER, EQUAL, field("user_name", $.id_))
-        ), optional(seq(COMMA, ANONYMOUS, EQUAL, choice(seq(ON, OFF),)))),
+    create_remote_service_binding: $ => seq(
+      CREATE,
+      REMOTE,
+      SERVICE,
+      BINDING,
+      field("binding_name", $.id_),
+      optional(seq(AUTHORIZATION, field("owner_name", $.id_))),
+      TO,
+      SERVICE,
+      field("remote_service_name", STRING),
+      WITH,
+      optional(seq(USER, EQUAL, field("user_name", $.id_))),
+      optional(seq(COMMA, ANONYMOUS, EQUAL, choice(ON, OFF)))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-resource-pool-transact-sql
-    create_resource_pool: $ => (
-            seq(CREATE, RESOURCE, POOL, field("pool_name", $.id_), optional(choice(
-        seq(WITH, LR_BRACKET, (optional(COMMA), MIN_CPU_PERCENT, EQUAL, DECIMAL)?, (),
-        seq(optional(COMMA), MAX_CPU_PERCENT, EQUAL, DECIMAL),
-        seq()?, (optional(COMMA), CAP_CPU_PERCENT, EQUAL, DECIMAL)?, (),
-        seq(optional(COMMA), AFFINITY, SCHEDULER, EQUAL, (),
-                    AUTO,
-        seq(LR_BRACKET, (optional(COMMA), (DECIMAL, DECIMAL, TO, DECIMAL))+, RR_BRACKET),
-        seq(NUMANODE, EQUAL, LR_BRACKET, (optional(COMMA), (DECIMAL, DECIMAL, TO, DECIMAL))+, RR_BRACKET),
-                ,
-        seq()?, (optional(COMMA), MIN_MEMORY_PERCENT, EQUAL, DECIMAL)?, (optional(COMMA), MAX_MEMORY_PERCENT, EQUAL, DECIMAL)?, (),
-        seq(optional(COMMA), MIN_IOPS_PER_VOLUME, EQUAL, DECIMAL),
-        seq()?, optional(seq(optional(COMMA), MAX_IOPS_PER_VOLUME, EQUAL, DECIMAL),), RR_BRACKET)
-        ),)),
+    create_resource_pool: $ => seq(
+      CREATE,
+      RESOURCE,
+      POOL,
+      field("pool_name", $.id_),
+      optional(choice(
+        seq(
+          WITH,
+          LR_BRACKET,
+          optional(seq(optional(COMMA), MIN_CPU_PERCENT, EQUAL, DECIMAL)),
+          optional(seq(optional(COMMA), MAX_CPU_PERCENT, EQUAL, DECIMAL)),
+          optional(seq(optional(COMMA), CAP_CPU_PERCENT, EQUAL, DECIMAL)),
+          optional(seq(
+            optional(COMMA),
+            AFFINITY,
+            SCHEDULER,
+            EQUAL,
+            choice(
+              AUTO,
+              seq(LR_BRACKET, repeat1(optional(COMMA), choice(DECIMAL, seq(DECIMAL, TO, DECIMAL))), RR_BRACKET),
+              seq(NUMANODE, EQUAL, LR_BRACKET, repeat1(seq(optional(COMMA), (DECIMAL, DECIMAL, TO, DECIMAL))), RR_BRACKET),
+            )
+          )),
+          optional(seq(optional(COMMA), MIN_MEMORY_PERCENT, EQUAL, DECIMAL)),
+          optional(seq(optional(COMMA), MAX_MEMORY_PERCENT, EQUAL, DECIMAL)),
+          optional(seq(optional(COMMA), MIN_IOPS_PER_VOLUME, EQUAL, DECIMAL)),
+          optional(seq(optional(COMMA), MAX_IOPS_PER_VOLUME, EQUAL, DECIMAL)),
+          RR_BRACKET,
+        ),
+      )),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-resource-governor-transact-sql
-    alter_resource_governor: $ => (
-            seq(ALTER, RESOURCE, GOVERNOR, choice(
-        seq((DISABLE, RECONFIGURE)),
+    alter_resource_governor: $ => seq(
+      ALTER,
+      RESOURCE,
+      GOVERNOR,
+      choice(
+        choice(DISABLE, RECONFIGURE),
         seq(WITH, LR_BRACKET, CLASSIFIER_FUNCTION, EQUAL, choice(
-        seq(field("schema_name", $.id_), DOT, field("function_name", $.id_)),
-                NULL$.
-            ), RR_BRACKET),
+          seq(field("schema_name", $.id_), DOT, field("function_name", $.id_)), $.NULL_),
+          RR_BRACKET
+        ),
         seq(RESET, STATISTICS),
-        seq(WITH, LR_BRACKET, MAX_OUTSTANDING_IO_PER_VOLUME, EQUAL, field("max_outstanding_io_per_volume", DECIMAL), RR_BRACKET)
-        ),),
+        seq(
+          WITH,
+          LR_BRACKET,
+          MAX_OUTSTANDING_IO_PER_VOLUME,
+          EQUAL,
+          field("max_outstanding_io_per_volume", DECIMAL),
+          RR_BRACKET
+        )
+      )
     ),
 
     // https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-database-audit-specification-transact-optional($.sql)view=sql-server-ver16
-    alter_database_audit_specification: $ => (
-            seq(ALTER, DATABASE, AUDIT, SPECIFICATION, field("audit_specification_name", $.id_), optional(
-        seq(FOR, SERVER, AUDIT, field("audit_name", $.id_))
-        ), optional(seq($.audit_action_spec_group, repeat(seq(',', $.audit_action_spec_group),))), optional(
-        seq(WITH, '(', STATE, '=', choice(seq(ON, OFF),), ')')
-        ),),
+    alter_database_audit_specification: $ => seq(
+      ALTER,
+      DATABASE,
+      AUDIT,
+      SPECIFICATION,
+      field("audit_specification_name", $.id_),
+      optional(seq(FOR, SERVER, AUDIT, field("audit_name", $.id_))),
+      optional(seq($.audit_action_spec_group, repeat(seq(',', $.audit_action_spec_group)))),
+      optional(seq(WITH, '(', STATE, '=', choice(ON, OFF), ')')),
     ),
 
-    audit_action_spec_group: $ => (
-            seq(choice(seq(ADD, DROP),), '(', choice(seq($.audit_action_specification, field("audit_action_group_name", $.id_))), ')'),
+    audit_action_spec_group: $ => seq(
+      choice(ADD, DROP),
+      '(', choice($.audit_action_specification, field("audit_action_group_name", $.id_)), ')'
     ),
 
-    audit_action_specification: $ => (
-            seq($.action_specification, repeat(seq(',', $.action_specification),), ON, optional(seq($.audit_class_name, '::'),), $.audit_securable, BY, $.principal_id, repeat(
-        seq(',', $.principal_id)
-        ),),
+
+    audit_action_specification: $ => seq(
+      $.action_specification,
+      repeat(seq(',', $.action_specification)),
+      ON,
+      optional(seq($.audit_class_name, '::')),
+      $.audit_securable,
+      BY,
+      $.principal_id,
+      repeat(seq(',', $.principal_id)),
     ),
 
     action_specification: $ => choice(
@@ -3754,17 +3951,17 @@ module.exports = grammar({
         TABL,
     ),
 
-    audit_securable: $ => (
-            seq(optional(seq(optional(seq($.id_, '.'),), $.id_, '.'),), $.id_),
-    ),
+    audit_securable: $ => seq(optional(seq(optional(seq($.id_, '.'),), $.id_, '.')), $.id_),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-role-transact-sql
-    alter_db_role: $ => (
-            seq(ALTER, ROLE, field("role_name", $.id_), choice(
-        seq(choice(seq(ADD, DROP),), MEMBER, field("database_principal", $.id_)),
-        seq(WITH, NAME, EQUAL, field("new_role_name", $.id_))
-        ),),
+    alter_db_role: $ => seq(
+      ALTER,
+      ROLE,
+      field("role_name", $.id_),
+      choice(seq(choice(seq(ADD, DROP)), MEMBER, field("database_principal", $.id_)), seq(WITH, NAME, EQUAL, field("new_role_name", $.id_))),
     ),
+
+    // MARKER
 
     // https://learn.microsoft.com/en-us/sql/t-sql/statements/create-database-audit-specification-transact-optional($.sql)view=sql-server-ver16
     create_database_audit_specification: $ => (
