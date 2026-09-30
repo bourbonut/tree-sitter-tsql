@@ -3964,151 +3964,262 @@ module.exports = grammar({
     // MARKER
 
     // https://learn.microsoft.com/en-us/sql/t-sql/statements/create-database-audit-specification-transact-optional($.sql)view=sql-server-ver16
-    create_database_audit_specification: $ => (
-            seq(CREATE, DATABASE, AUDIT, SPECIFICATION, field("audit_specification_name", $.id_), optional(
-        seq(FOR, SERVER, AUDIT, field("audit_name", $.id_))
-        ), optional(seq($.audit_action_spec_group, repeat(seq(',', $.audit_action_spec_group),))), optional(
-        seq(WITH, '(', STATE, '=', choice(seq(ON, OFF),), ')')
-        ),),
+    create_database_audit_specification: $ => seq(
+      CREATE,
+      DATABASE,
+      AUDIT,
+      SPECIFICATION,
+      field("audit_specification_name", $.id_),
+      optional(seq(FOR, SERVER, AUDIT, field("audit_name", $.id_)) ),
+      optional(seq($.audit_action_spec_group, repeat(seq(',', $.audit_action_spec_group)))),
+      optional(seq(WITH, '(', STATE, '=', choice(ON, OFF), ')') ),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-role-transact-sql
-    create_db_role: $ => (
-            seq(CREATE, ROLE, field("role_name", $.id_), optional(seq(AUTHORIZATION, field("owner_name", $.id_)))),
+    create_db_role: $ => seq(
+      CREATE,
+      ROLE,
+      field("role_name", $.id_),
+      optional(seq(AUTHORIZATION, field("owner_name", $.id_)))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-route-transact-sql
-    create_route: $ => (
-            seq(CREATE, ROUTE, field("route_name", $.id_), optional(seq(AUTHORIZATION, field("owner_name", $.id_))), WITH, optional(
-        seq(optional(COMMA), SERVICE_NAME, EQUAL, field("route_service_name", STRING))
-        ), optional(seq(optional(COMMA), BROKER_INSTANCE, EQUAL, field("broker_instance_identifier", STRING))), optional(
-        seq(optional(COMMA), LIFETIME, EQUAL, DECIMAL)
-        ), optional(COMMA), ADDRESS, EQUAL, STRING, optional(seq(COMMA, MIRROR_ADDRESS, EQUAL, STRING),)),
+    create_route: $ => seq(
+      CREATE,
+      ROUTE,
+      field("route_name", $.id_),
+      optional(seq(AUTHORIZATION, field("owner_name", $.id_))),
+      WITH,
+      optional(seq(optional(COMMA), SERVICE_NAME, EQUAL, field("route_service_name", STRING)) ),
+      optional(seq(optional(COMMA), BROKER_INSTANCE, EQUAL, field("broker_instance_identifier", STRING))),
+      optional(seq(optional(COMMA), LIFETIME, EQUAL, DECIMAL)),
+      optional(COMMA),
+      ADDRESS,
+      EQUAL,
+      STRING,
+      optional(seq(COMMA, MIRROR_ADDRESS, EQUAL, STRING))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-rule-transact-sql
-    create_rule: $ => (
-            seq(CREATE, RULE, optional(seq(field("schema_name", $.id_), DOT),), field("rule_name", $.id_), AS, $.search_condition),
+    create_rule: $ => seq(
+      CREATE,
+      RULE,
+      optional(seq(field("schema_name", $.id_), DOT)),
+      field("rule_name", $.id_),
+      AS,
+      $.search_condition
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-schema-transact-sql
-    alter_schema_sql: $ => (
-            seq(ALTER, SCHEMA, field("schema_name", $.$.id_), TRANSFER, optional(
-        seq(choice(seq(OBJECT, TYPE, XML, SCHEMA, COLLECTION),), DOUBLE_COLON)
-        ), $.id_, optional(seq(DOT, $.id_),)),
+    alter_schema_sql: $ => seq(
+      ALTER,
+      SCHEMA,
+      field("schema_name", $.$.id_),
+      TRANSFER,
+      optional(seq(choice(OBJECT, TYPE, seq(XML, SCHEMA, COLLECTION)), DOUBLE_COLON)),
+      $.id_,
+      optional(seq(DOT, $.id_))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-schema-transact-sql
-    create_schema: $ => (
-            seq(CREATE, SCHEMA, choice(
+    create_schema: $ => seq(
+      CREATE,
+      SCHEMA,
+      choice(
         seq(field("schema_name", $.id_)),
         seq(AUTHORIZATION, field("owner_name", $.id_)),
         seq(field("schema_name", $.id_), AUTHORIZATION, field("owner_name", $.id_))
-        ), repeat(choice(
-            $.create_table,
-            $.create_view,
-        seq((GRANT, DENY), (SELECT, INSERT, DELETE, UPDATE), ON, optional(seq(SCHEMA, DOUBLE_COLON),), field("object_name", $.id_), TO, field("owner_name", $.id_)),
-        seq(REVOKE, (SELECT, INSERT, DELETE, UPDATE), ON, optional(seq(SCHEMA, DOUBLE_COLON),), field("object_name", $.id_), FROM, field("owner_name", $.id_))
-        ),)),
+      ),
+      repeat(
+        choice(
+          $.create_table,
+          $.create_view,
+          seq(
+            choice(GRANT, DENY),
+            choice(SELECT, INSERT, DELETE, UPDATE),
+            ON,
+            optional(seq(SCHEMA, DOUBLE_COLON)),
+            field("object_name", $.id_),
+            TO,
+            field("owner_name", $.id_)
+          ),
+          seq(
+            REVOKE,
+            choice(SELECT, INSERT, DELETE, UPDATE),
+            ON,
+            optional(SCHEMA, DOUBLE_COLON),
+            field("object_name", $.id_),
+            FROM,
+            field("owner_name", $.id_)
+          )
+        ),
+      )
     ),
 
-    create_schema_azure_sql_dw_and_pdw: $ => (
-            seq(CREATE, SCHEMA, field("schema_name", $.id_), optional(seq(AUTHORIZATION, field("owner_name", $.id_)))),
+    create_schema_azure_sql_dw_and_pdw: $ => seq(
+      CREATE,
+      SCHEMA,
+      field("schema_name", $.id_),
+      optional(seq(AUTHORIZATION, field("owner_name", $.id_)))
     ),
 
-    alter_schema_azure_sql_dw_and_pdw: $ => (
-            seq(ALTER, SCHEMA, field("schema_name", $.$.id_), TRANSFER, optional(seq(OBJECT, DOUBLE_COLON),), $.id_, optional(seq(DOT, ID),)),
+    alter_schema_azure_sql_dw_and_pdw: $ => seq(
+      ALTER,
+      SCHEMA,
+      field("schema_name", $.id_),
+      TRANSFER,
+      optional(seq(OBJECT, DOUBLE_COLON)),
+      $.id_,
+      optional(seq(DOT, ID))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-search-property-list-transact-sql
-    create_search_property_list: $ => (
-            seq(CREATE, SEARCH, PROPERTY, LIST, field("new_list_name", $.id_), optional(
-        seq(FROM, optional(seq(field("database_name", $.id_), DOT),), field("source_list_name", $.id_))
-        ), optional(seq(AUTHORIZATION, field("owner_name", $.id_)))),
+    create_search_property_list: $ => seq(
+      CREATE,
+      SEARCH,
+      PROPERTY,
+      LIST,
+      field("new_list_name", $.id_),
+      optional(seq(FROM, optional(seq(field("database_name", $.id_), DOT)), field("source_list_name", $.id_))),
+      optional(seq(AUTHORIZATION, field("owner_name", $.id_)))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-security-policy-transact-sql
-    create_security_policy: $ => (
-            seq(CREATE, SECURITY, POLICY, optional(seq(field("schema_name", $.id_), DOT),), field("security_policy_name", $.id_), repeat1(choice(
-        seq(optional(COMMA), ADD, (FILTER, BLOCK)?, PREDICATE, field("tvf_schema_name", $.id_), DOT, field("security_predicate_function_name", $.id_), LR_BRACKET, (),
-        seq(optional(COMMA), field("column_name_or_arguments", $.id_)),
-        seq()+, RR_BRACKET, ON, field("table_schema_name", $.id_), DOT, field("name", $.id_), repeat(choice(
-        seq(optional(COMMA), AFTER, (INSERT, UPDATE)),
-        seq(optional(COMMA), BEFORE, choice(seq(UPDATE, DELETE),))
-            ),))
-        ),), optional(choice(seq(WITH, LR_BRACKET, STATE, EQUAL, (ON, OFF), optional(seq(SCHEMABINDING, (#######,))), RR_BRACKET),)), optional(
-        seq(NOT, FOR, REPLICATION)
-        ),),
+    create_security_policy: $ => seq(
+      CREATE,
+      SECURITY,
+      POLICY,
+      optional(seq(field("schema_name", $.id_), DOT)),
+      field("security_policy_name", $.id_),
+      repeat1(
+        seq(
+          optional(COMMA),
+          ADD,
+          optional(choice(FILTER, BLOCK)),
+          PREDICATE,
+          field("tvf_schema_name", $.id_),
+          DOT,
+          field("security_predicate_function_name", $.id_),
+          LR_BRACKET,
+          repeat1(seq(optional(COMMA), field("column_name_or_arguments", $.id_))),
+          RR_BRACKET,
+          ON,
+          field("table_schema_name", $.id_),
+          DOT,
+          field("name", $.id_),
+          repeat(choice(
+            seq(optional(COMMA), AFTER, choice(INSERT, UPDATE)),
+            seq(optional(COMMA), BEFORE, choice(seq(UPDATE, DELETE),))
+          ))
+        ),
+      ),
+      optional(
+        seq(WITH, LR_BRACKET, STATE, EQUAL, choice(ON, OFF), optional(seq(SCHEMABINDING, choice(ON, OFF))), RR_BRACKET),
+      ),
+      optional(seq(NOT, FOR, REPLICATION)),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-sequence-transact-sql
-    alter_sequence: $ => (
-            seq(ALTER, SEQUENCE, optional(seq(field("schema_name", $.id_), DOT),), field("sequence_name", $.id_), optional(seq(RESTART, optional(seq(WITH, DECIMAL),))), optional(
-        seq(INCREMENT, BY, field("sequnce_increment", DECIMAL))
-        ), optional(choice(seq(MINVALUE, DECIMAL, NO, MINVALUE),)), optional(choice(seq(MAXVALUE, DECIMAL, NO, MAXVALUE),)), optional(choice(seq(CYCLE, NO, CYCLE),)), optional(choice(
-        seq(CACHE, DECIMAL),
-        seq(NO, CACHE)
-        ),)),
+    alter_sequence: $ => seq(
+      ALTER,
+      SEQUENCE,
+      optional(seq(field("schema_name", $.id_), DOT)),
+      field("sequence_name", $.id_),
+      optional(seq(RESTART, optional(seq(WITH, DECIMAL)))),
+      optional(seq(INCREMENT, BY, field("sequence_increment", DECIMAL))),
+      optional(choice(seq(MINVALUE, DECIMAL), seq(NO, MINVALUE))),
+      optional(choice(seq(MAXVALUE, DECIMAL), seq(NO, MAXVALUE))),
+      optional(choice(CYCLE, seq(NO, CYCLE))),
+      optional(choice(seq(CACHE, DECIMAL), seq(NO, CACHE)))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-sequence-transact-sql
-    create_sequence: $ => (
-            seq(CREATE, SEQUENCE, optional(seq(field("schema_name", $.id_), DOT),), field("sequence_name", $.id_), optional(seq(AS, $.data_type),), optional(
-        seq(START, WITH, DECIMAL)
-        ), optional(seq(INCREMENT, BY, MINUS?, DECIMAL),), optional(choice(seq(MINVALUE, optional(seq(MINUS?, DECIMAL),), NO, MINVALUE),)), optional(choice(
-        seq(MAXVALUE, optional(seq(MINUS?, DECIMAL),)),
-        seq(NO, MAXVALUE)
-        ),), optional(choice(seq(CYCLE, NO, CYCLE),)), optional(choice(seq(CACHE, DECIMAL?, NO, CACHE),))),
+    create_sequence: $ => seq(
+      CREATE,
+      SEQUENCE,
+      optional(seq(field("schema_name", $.id_), DOT)),
+      field("sequence_name", $.id_),
+      optional(seq(AS, $.data_type)),
+      optional(seq(START, WITH, DECIMAL)),
+      optional(seq(INCREMENT, BY, optional(MINUS), DECIMAL)),
+      optional(choice(seq(MINVALUE, optional(seq(optional(MINUS), DECIMAL))), seq(NO, MINVALUE))),
+      optional(choice(seq(MAXVALUE, optional(seq(optional(MINUS), DECIMAL))), seq(NO, MAXVALUE))),
+      optional(choice(seq(CYCLE, seq(NO, CYCLE)))),
+      optional(choice(seq(CACHE, optional(DECIMAL)), seq(NO, CACHE)))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-server-audit-transact-sql
-    alter_server_audit: $ => (
-            seq(ALTER, SERVER, AUDIT, field("audit_name", $.id_), choice(
-            ,
-        seq(TO, (),
-        seq(FILE, (),
-        seq(LR_BRACKET, (),
-        seq(optional(COMMA), FILEPATH, EQUAL, field("filepath", STRING)),
-        seq(optional(COMMA), MAXSIZE, EQUAL, (, DECIMAL, (MB, GB, TB), UNLIMITED)),
-        seq(optional(COMMA), MAX_ROLLOVER_FILES, EQUAL, $.max_rollover_files, =, (DECIMAL, UNLIMITED)),
-        seq(optional(COMMA), MAX_FILES, EQUAL, field("max_files", DECIMAL)),
-        seq(optional(COMMA), RESERVE_DISK_SPACE, EQUAL, (ON, OFF)),
-        seq()*, RR_BRACKET)
-                    ),
-                    APPLICATION_LOG,
-                    SECURITY_LO,
-                ,
-        seq()?, (),
-        seq(WITH, LR_BRACKET, (),
-        seq(optional(COMMA), QUEUE_DELAY, EQUAL, field("queue_delay", DECIMAL)),
-        seq(optional(COMMA), ON_FAILURE, EQUAL, (CONTINUE, SHUTDOWN, FAIL_OPERATION)),
-        seq(optional(COMMA), STATE, EQUAL, (ON, OFF)),
-        seq()*, RR_BRACKET),
-        seq()?, optional(
-        seq(WHERE, choice(
-        seq(optional(COMMA), (NOT?), field("event_field_name", $.id_), (),
-                        EQUAL,
-        seq((LESS, GREATER)),
-        seq((EXCLAMATION, EQUAL)),
-                        GREATER,
-        seq((GREATER, EQUAL)),
-                        LESS,
-        seq(LESS, EQUAL),
-        seq(), choice(seq(DECIMAL, STRING),)),
-        seq(optional(COMMA), (AND, OR), NOT?, (),
-                        EQUAL,
-        seq((LESS, GREATER)),
-        seq((EXCLAMATION, EQUAL)),
-                        GREATER,
-        seq((GREATER, EQUAL)),
-                        LESS,
-        seq(LESS, EQUAL),
-        seq(), choice(seq(DECIMAL, STRING),))
-                ),)
-            ),),
-        seq(REMOVE, WHERE),
-        seq(MODIFY, NAME, EQUAL, field("new_audit_name", $.id_))
-        ),),
+    alter_server_audit: $ => seq(
+      ALTER,
+      SERVER,
+      AUDIT,
+      field("audit_name", $.id_),
+      seq(
+        optional(seq(
+          TO,
+          seq(
+            FILE,
+            seq(
+              LR_BRACKET,
+              seq(optional(COMMA), FILEPATH, EQUAL, field("filepath", STRING)),
+              seq(optional(COMMA), MAXSIZE, EQUAL, choice(DECIMAL, choice(MB, GB, TB), UNLIMITED)),
+              seq(optional(COMMA), MAX_ROLLOVER_FILES, EQUAL, field("max_rollover_files", choice(DECIMAL, UNLIMITED))),
+              seq(optional(COMMA), MAX_FILES, EQUAL, field("max_files", DECIMAL)),
+              seq(optional(COMMA), RESERVE_DISK_SPACE, EQUAL, (ON, OFF)),
+              RR_BRACKET
+            )
+          ),
+          APPLICATION_LOG,
+          SECURITY_LO,
+        )),
+        optional(seq(
+          WITH,
+          LR_BRACKET,
+          repeat(choice(
+            seq(optional(COMMA), QUEUE_DELAY, EQUAL, field("queue_delay", DECIMAL)),
+            seq(optional(COMMA), ON_FAILURE, EQUAL, choice(CONTINUE, SHUTDOWN, FAIL_OPERATION)),
+            seq(optional(COMMA), STATE, EQUAL, choice(ON, OFF)),
+          )),
+          RR_BRACKET
+        )),
+        optional(seq(
+          WHERE,
+          choice(
+            seq(
+              optional(COMMA),
+              optional(NOT),
+              field("event_field_name", $.id_),
+              choice(
+                EQUAL,
+                seq(LESS, GREATER),
+                seq(EXCLAMATION, EQUAL),
+                GREATER,
+                seq(GREATER, EQUAL),
+                LESS,
+                seq(LESS, EQUAL),
+              ),
+              choice(DECIMAL, STRING),
+            ),
+            seq(
+              optional(COMMA),
+              choice(AND, OR),
+              optional(NOT),
+              choice(
+                EQUAL,
+                seq(LESS, GREATER),
+                seq(EXCLAMATION, EQUAL),
+                GREATER,
+                seq(GREATER, EQUAL),
+                LESS,
+                seq(LESS, EQUAL),
+              ),
+              choice(seq(DECIMAL, STRING),)
+            )
+          ),
+          )),
+          seq(REMOVE, WHERE),
+          seq(MODIFY, NAME, EQUAL, field("new_audit_name", $.id_))
+      )
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-server-audit-transact-sql
