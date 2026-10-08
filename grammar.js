@@ -4550,150 +4550,306 @@ module.exports = grammar({
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-symmetric-key-transact-sql
 
-    alter_symmetric_key: $ => (
-            seq(ALTER, SYMMETRIC, KEY, field("key_name", $.id_), choice(
-        seq((ADD, DROP), ENCRYPTION, BY, choice(
-        seq(CERTIFICATE, field("certificate_name", $.id_)),
-        seq(PASSWORD, EQUAL, field("password", STRING)),
-        seq(SYMMETRIC, KEY, field("symmetric_key_name", $.id_)),
-        seq(ASYMMETRIC, KEY, field("Asym_key_name", $.id_))
-            ),)
-        ),),
+    alter_symmetric_key: $ => seq(
+      ALTER,
+      SYMMETRIC,
+      KEY,
+      field("key_name", $.id_),
+      choice(
+        seq(
+          choice(ADD, DROP),
+          ENCRYPTION,
+          BY,
+          choice(
+            seq(CERTIFICATE, field("certificate_name", $.id_)),
+            seq(PASSWORD, EQUAL, field("password", STRING)),
+            seq(SYMMETRIC, KEY, field("symmetric_key_name", $.id_)),
+            seq(ASYMMETRIC, KEY, field("asym_key_name", $.id_))
+          ),
+        )
+      ),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-synonym-transact-sql
-    create_synonym: $ => (
-            seq(CREATE, SYNONYM, optional(seq($.schema_name_1, =, $.id_, DOT),), field("synonym_name", $.id_), FOR, choice(
-        seq((field("server_name", $.$.id_), DOT)?, (field("database_name", $.$.id_), DOT)?, (schema_name_2, =, $.id_, DOT)?, field("object_name", $.$.id_)),
-        seq((database_or_schema2, =, $.id_, DOT)?, optional(seq($.schema_id_2field("_or_object_name", $.id_), DOT),))
-        ),),
+    create_synonym: $ => seq(
+      CREATE,
+      SYNONYM,
+      optional(seq(field("schema_name_1", $.id_), DOT)),
+      field("synonym_name", $.id_),
+      FOR,
+      choice(
+        seq(
+          optional(seq(field("server_name", $.id_), DOT)),
+          optional(seq(field("database_name", $.id_), DOT)),
+          optional(seq("schema_name_2", $.id_), DOT),
+          field("object_name", $.id_)
+        ),
+        seq(
+          optional(seq(field("database_or_schema2", $.id_), DOT)),
+          optional(seq(field("schema_id_2_or_object_name", $.id_), DOT)),
+        ),
+      ),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-user-transact-sql
-    alter_user: $ => (
-            seq(ALTER, USER, field("username", $.id_), WITH, repeat1(choice(
+    alter_user: $ => seq(
+      ALTER,
+      USER,
+      field("username", $.id_),
+      WITH,
+      repeat1(choice(
         seq(optional(COMMA), NAME, EQUAL, field("newusername", $.id_)),
-        seq(optional(COMMA), DEFAULT_SCHEMA, EQUAL, (, field("schema_name", $.id_), NULL_)),
+        seq(optional(COMMA), DEFAULT_SCHEMA, EQUAL, choice(field("schema_name", $.id_), NULL_)),
         seq(optional(COMMA), LOGIN, EQUAL, field("loginame", $.id_)),
-        seq(optional(COMMA), PASSWORD, EQUAL, STRING, (OLD_PASSWORD, EQUAL, STRING)+),
-        seq(optional(COMMA), DEFAULT_LANGUAGE, EQUAL, (NONE, field("lcid", DECIMAL), field("language_name_or_alias", $.id_))),
-        seq(optional(COMMA), ALLOW_ENCRYPTED_VALUE_MODIFICATIONS, EQUAL, choice(seq(ON, OFF),))
-        ),)),
+        seq(optional(COMMA), PASSWORD, EQUAL, STRING, repeat1(seq(OLD_PASSWORD, EQUAL, STRING))),
+        seq(optional(COMMA), DEFAULT_LANGUAGE, EQUAL, choice(NONE, field("lcid", DECIMAL), field("language_name_or_alias", $.id_))),
+        seq(optional(COMMA), ALLOW_ENCRYPTED_VALUE_MODIFICATIONS, EQUAL, choice(ON, OFF))
+      )),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-user-transact-sql
-    create_user: $ => (
-            seq(CREATE, USER, field("user_name", $.id_), optional(seq(choice(seq(FOR, FROM),), LOGIN, field("login_name", $.id_))), (),
-        seq(WITH, repeat(choice(
-        seq(optional(COMMA), DEFAULT_SCHEMA, EQUAL, field("schema_name", $.id_)),
-        seq(optional(COMMA), ALLOW_ENCRYPTED_VALUE_MODIFICATIONS, EQUAL, choice(seq(ON, OFF),))
-            ),)),
-        ),?,
-        seq(CREATE, USER, choice(
-        seq(field("windows_principal", $.id_), (),
-        seq(WITH, (),
-        seq(optional(COMMA), DEFAULT_SCHEMA, EQUAL, field("schema_name", $.id_)),
-        seq(optional(COMMA), DEFAULT_LANGUAGE, EQUAL, (NONE, DECIMAL, field("language_name_or_alias", $.id_))),
-        seq(optional(COMMA), SID, EQUAL, BINARY),
-        seq(optional(COMMA), ALLOW_ENCRYPTED_VALUE_MODIFICATIONS, EQUAL, (ON, OFF))
-                ),
-            ),?,
-        seq(field("user_name", $.id_), WITH, PASSWORD, EQUAL, field("password", STRING), repeat(choice(
-        seq(optional(COMMA), DEFAULT_SCHEMA, EQUAL, field("schema_name", $.id_)),
-        seq(optional(COMMA), DEFAULT_LANGUAGE, EQUAL, (NONE, DECIMAL, field("language_name_or_alias", $.id_))),
-        seq(optional(COMMA), SID, EQUAL, BINARY),
-        seq(optional(COMMA), ALLOW_ENCRYPTED_VALUE_MODIFICATIONS, EQUAL, choice(seq(ON, OFF),))
-            ),)),
-        seq(field("Azure_Active_Directory_principal", $.id_), FROM, EXTERNAL, PROVIDER)
-        ),),
-        seq(CREATE, USER, field("user_name", $.id_), choice(
-        seq(WITHOUT, LOGIN, (),
-        seq(optional(COMMA), DEFAULT_SCHEMA, EQUAL, field("schema_name", $.id_)),
-        seq(optional(COMMA), ALLOW_ENCRYPTED_VALUE_MODIFICATIONS, EQUAL, (ON, OFF))
-            ),*,
-        seq((#######,), CERTIFICATE, field("cert_name", $.id_)),
-        seq((#######,), ASYMMETRIC, KEY, field("asym_key_name", $.id_))
-        ),),
-        seq(CREATE, USER, field("user_name", $.id_)),
+    create_user: $ => choice(
+      seq(
+        CREATE,
+        USER,
+        field("user_name", $.id_),
+        optional(seq(
+          choice(FOR, FROM),
+          LOGIN,
+          field("login_name", $.id_)
+        )),
+        optional(seq(
+          WITH,
+          repeat(choice(
+            seq(optional(COMMA), DEFAULT_SCHEMA, EQUAL, field("schema_name", $.id_)),
+            seq(optional(COMMA), ALLOW_ENCRYPTED_VALUE_MODIFICATIONS, EQUAL, choice(ON, OFF))
+          ))
+        ))
+      ),
+
+      seq(
+        CREATE,
+        USER,
+        choice(
+          seq(
+            field("windows_principal", $.id_),
+            optional(seq(
+              WITH,
+              repeat(choice(
+                seq(optional(COMMA), DEFAULT_SCHEMA, EQUAL, field("schema_name", $.id_)),
+                seq(optional(COMMA), DEFAULT_LANGUAGE, EQUAL, choice(NONE, DECIMAL, field("language_name_or_alias", $.id_))),
+                seq(optional(COMMA), SID, EQUAL, BINARY),
+                seq(optional(COMMA), ALLOW_ENCRYPTED_VALUE_MODIFICATIONS, EQUAL, choice(ON, OFF))
+              ))
+            ))
+          ),
+          seq(
+            field("user_name", $.id_),
+            WITH,
+            PASSWORD,
+            EQUAL,
+            field("password", STRING),
+            repeat(choice(
+              seq(optional(COMMA), DEFAULT_SCHEMA, EQUAL, field("schema_name", $.id_)),
+              seq(optional(COMMA), DEFAULT_LANGUAGE, EQUAL, choice(NONE, DECIMAL, field("language_name_or_alias", $.id_))),
+              seq(optional(COMMA), SID, EQUAL, BINARY),
+              seq(optional(COMMA), ALLOW_ENCRYPTED_VALUE_MODIFICATIONS, EQUAL, choice(ON, OFF))
+            ))
+          ),
+          seq(
+            field("Azure_Active_Directory_principal", $.id_),
+            FROM,
+            EXTERNAL,
+            PROVIDER
+          )
+        )
+      ),
+
+      seq(
+        CREATE,
+        USER,
+        field("user_name", $.id_),
+        choice(
+          seq(
+            WITHOUT,
+            LOGIN,
+            repeat(choice(
+              seq(optional(COMMA), DEFAULT_SCHEMA, EQUAL, field("schema_name", $.id_)),
+              seq(optional(COMMA), ALLOW_ENCRYPTED_VALUE_MODIFICATIONS, EQUAL, choice(ON, OFF))
+            ))
+          ),
+          seq(
+            choice(FOR, FROM),
+            CERTIFICATE,
+            field("cert_name", $.id_)
+          ),
+          seq(
+            choice(FOR, FROM),
+            ASYMMETRIC,
+            KEY,
+            field("asym_key_name", $.id_)
+          )
+        )
+      ),
+
+      seq(
+        CREATE,
+        USER,
+        field("user_name", $.id_)
+      )
     ),
 
-    create_user_azure_sql_dw: $ => (
-            seq(CREATE, USER, field("user_name", $.id_), optional(choice(seq(choice(seq(FOR, FROM),), LOGIN, field("login_name", $.id_), WITHOUT, LOGIN),)), (#######,)),
-        seq(CREATE, USER, field("Azure_Active_Directory_principal", $.id_), FROM, EXTERNAL, PROVIDER, (#######,)),
+    create_user_azure_sql_dw: $ => choice(
+      seq(
+        CREATE,
+        USER,
+        field("user_name", $.id_),
+        optional(choice(
+          seq(
+            choice(FOR, FROM),
+            LOGIN,
+            field("login_name", $.id_)
+          ),
+          seq(WITHOUT, LOGIN)
+        )),
+        optional(seq(
+          WITH,
+          DEFAULT_SCHEMA,
+          EQUAL,
+          field("schema_name", $.id_)
+        ))
+      ),
+
+      seq(
+        CREATE,
+        USER,
+        field("Azure_Active_Directory_principal", $.id_),
+        FROM,
+        EXTERNAL,
+        PROVIDER,
+        optional(seq(
+          WITH,
+          DEFAULT_SCHEMA,
+          EQUAL,
+          field("schema_name", $.id_)
+        ))
+      )
     ),
 
-    alter_user_azure_sql: $ => (
-            seq(ALTER, USER, field("username", $.id_), WITH, repeat1(choice(
+    alter_user_azure_sql: $ => seq(
+      ALTER,
+      USER,
+      field("username", $.id_),
+      WITH,
+      repeat1(choice(
         seq(optional(COMMA), NAME, EQUAL, field("newusername", $.id_)),
         seq(optional(COMMA), DEFAULT_SCHEMA, EQUAL, field("schema_name", $.id_)),
         seq(optional(COMMA), LOGIN, EQUAL, field("loginame", $.id_)),
-        seq(optional(COMMA), ALLOW_ENCRYPTED_VALUE_MODIFICATIONS, EQUAL, choice(seq(ON, OFF),))
-        ),)),
+        seq(optional(COMMA), ALLOW_ENCRYPTED_VALUE_MODIFICATIONS, EQUAL, choice(ON, OFF))
+      ),)
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-workload-group-transact-sql
 
-    alter_workload_group: $ => (
-            seq(ALTER, WORKLOAD, GROUP, choice(seq(field("workload_group_group_name", $.id_), DEFAULT_DOUBLE_QUOTE),), optional(
-        seq(WITH, LR_BRACKET, repeat1(choice(
-        seq(IMPORTANCE, EQUAL, choice(seq(LOW, MEDIUM, HIGH),)),
-        seq(optional(COMMA), REQUEST_MAX_MEMORY_GRANT_PERCENT, EQUAL, field("request_max_memory_grant", DECIMAL)),
-        seq(optional(COMMA), REQUEST_MAX_CPU_TIME_SEC, EQUAL, field("request_max_cpu_time_sec", DECIMAL)),
-        seq(REQUEST_MEMORY_GRANT_TIMEOUT_SEC, EQUAL, field("request_memory_grant_timeout_sec", DECIMAL)),
-        seq(MAX_DOP, EQUAL, field("max_dop", DECIMAL)),
-        seq(GROUP_MAX_REQUESTS, EQUAL, field("group_max_requests", DECIMAL))
-            ),), RR_BRACKET)
-        ), optional(seq(USING, choice(seq(field("workload_group_pool_name", $.id_), DEFAULT_DOUBLE_QUOTE),)))),
+    alter_workload_group: $ => seq(
+      ALTER,
+      WORKLOAD,
+      GROUP,
+      choice(seq(field("workload_group_group_name", $.id_), DEFAULT_DOUBLE_QUOTE)),
+      optional(seq(
+        WITH,
+        LR_BRACKET,
+        repeat1(choice(
+          seq(IMPORTANCE, EQUAL, choice(LOW, MEDIUM, HIGH)),
+          seq(optional(COMMA), REQUEST_MAX_MEMORY_GRANT_PERCENT, EQUAL, field("request_max_memory_grant", DECIMAL)),
+          seq(optional(COMMA), REQUEST_MAX_CPU_TIME_SEC, EQUAL, field("request_max_cpu_time_sec", DECIMAL)),
+          seq(REQUEST_MEMORY_GRANT_TIMEOUT_SEC, EQUAL, field("request_memory_grant_timeout_sec", DECIMAL)),
+          seq(MAX_DOP, EQUAL, field("max_dop", DECIMAL)),
+          seq(GROUP_MAX_REQUESTS, EQUAL, field("group_max_requests", DECIMAL))
+        )),
+        RR_BRACKET
+      )),
+      optional(seq(
+        USING,
+        choice(seq(field("workload_group_pool_name", $.id_), DEFAULT_DOUBLE_QUOTE))
+      ))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-workload-group-transact-sql
-    create_workload_group: $ => (
-            seq(CREATE, WORKLOAD, GROUP, field("workload_group_group_name", $.id_), optional(
-        seq(WITH, LR_BRACKET, repeat1(choice(
-        seq(IMPORTANCE, EQUAL, choice(seq(LOW, MEDIUM, HIGH),)),
-        seq(optional(COMMA), REQUEST_MAX_MEMORY_GRANT_PERCENT, EQUAL, field("request_max_memory_grant", DECIMAL)),
-        seq(optional(COMMA), REQUEST_MAX_CPU_TIME_SEC, EQUAL, field("request_max_cpu_time_sec", DECIMAL)),
-        seq(REQUEST_MEMORY_GRANT_TIMEOUT_SEC, EQUAL, field("request_memory_grant_timeout_sec", DECIMAL)),
-        seq(MAX_DOP, EQUAL, field("max_dop", DECIMAL)),
-        seq(GROUP_MAX_REQUESTS, EQUAL, field("group_max_requests", DECIMAL))
-            ),), RR_BRACKET)
-        ), optional(choice(
-        seq(USING, (field("workload_group_pool_name", $.id_), DEFAULT_DOUBLE_QUOTE)?, optional(choice(
-        seq(optional(COMMA), EXTERNAL, field("external_pool_name", $.id_)),
-                DEFAULT_DOUBLE_QUOT
-            ),))
-        ),)),
+    create_workload_group: $ => seq(
+      CREATE,
+      WORKLOAD,
+      GROUP,
+      field("workload_group_group_name", $.id_),
+      optional(seq(
+        WITH,
+        LR_BRACKET,
+        repeat1(choice(
+          seq(IMPORTANCE, EQUAL, choice(LOW, MEDIUM, HIGH)),
+          seq(optional(COMMA), REQUEST_MAX_MEMORY_GRANT_PERCENT, EQUAL, field("request_max_memory_grant", DECIMAL)),
+          seq(optional(COMMA), REQUEST_MAX_CPU_TIME_SEC, EQUAL, field("request_max_cpu_time_sec", DECIMAL)),
+          seq(REQUEST_MEMORY_GRANT_TIMEOUT_SEC, EQUAL, field("request_memory_grant_timeout_sec", DECIMAL)),
+          seq(MAX_DOP, EQUAL, field("max_dop", DECIMAL)),
+          seq(GROUP_MAX_REQUESTS, EQUAL, field("group_max_requests", DECIMAL))
+        )),
+        RR_BRACKET
+      )),
+      optional(choice(
+        seq(
+          USING,
+          optional(choice(field("workload_group_pool_name", $.id_), DEFAULT_DOUBLE_QUOTE)),
+          optional(choice(seq(optional(COMMA), EXTERNAL, field("external_pool_name", $.id_)), DEFAULT_DOUBLE_QUOTE))
+        )
+      ))
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-xml-schema-collection-transact-sql
-    create_xml_schema_collection: $ => (
-            seq(CREATE, XML, SCHEMA, COLLECTION, optional(seq(field("relational_schema", $.id_), DOT),), field("sql_identifier", $.id_), AS, choice(
-            STRING,
-            $.id_,
-            LOCAL_I
-        ),),
+    create_xml_schema_collection: $ => seq(
+      CREATE,
+      XML,
+      SCHEMA,
+      COLLECTION,
+      optional(seq(field("relational_schema", $.id_), DOT)),
+      field("sql_identifier", $.id_),
+      AS,
+      choice(STRING, $.id_, LOCAL_ID),
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-partition-function-transact-optional($.sql)view=sql-server-ver15
-    create_partition_function: $ => (
-            seq(CREATE, PARTITION, FUNCTION, field("partition_function_name", $.id_), '(', field("input_parameter_type", $.data_type), ')', AS, RANGE, optional(choice(
-            LEFT,
-            RIGH
-        ),), FOR, VALUES, '(', field("boundary_values", $.expression_list_), ')'),
+    create_partition_function: $ => seq(
+      CREATE,
+      PARTITION,
+      FUNCTION,
+      field("partition_function_name", $.id_),
+      '(', field("input_parameter_type", $.data_type), ')',
+      AS,
+      RANGE,
+      optional(choice(LEFT, RIGH)),
+      FOR,
+      VALUES,
+      '(', field("boundary_values", $.expression_list_), ')'
     ),
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-partition-scheme-transact-optional($.sql)view=sql-server-ver15
-    create_partition_scheme: $ => (
-            seq(CREATE, PARTITION, SCHEME, field("partition_scheme_name", $.$.id_), AS, PARTITION, field("partition_function_name", $.$.id_), ALL?, TO, '(', $.file_group_names, +=, $.id_, repeat(
-        seq(',', $.file_group_names, +=, $.id_)
-        ), ')'),
+    create_partition_scheme: $ => seq(
+      CREATE,
+      PARTITION,
+      SCHEME,
+      field("partition_scheme_name", $.id_),
+      AS,
+      PARTITION,
+      field("partition_function_name", $.id_),
+      optional(ALL),
+      TO,
+      '(', field("file_group_names", $.id_), repeat(seq(',', field("file_group_names", $.id_))), ')'
     ),
 
-    create_queue: $ => (
-            seq(CREATE, QUEUE, choice(seq($.full_table_name, field("queue_name", $.id_))), optional($.queue_settings), optional(choice(
-        seq(ON, field("filegroup", $.id_)),
-            DEFAUL
-        ),)),
+    create_queue: $ => seq(
+      CREATE,
+      QUEUE,
+      choice(seq($.full_table_name, field("queue_name", $.id_))),
+      optional($.queue_settings),
+      optional(choice(seq(ON, field("filegroup", $.id_)), DEFAULT))
     ),
 
     queue_settings: $ => (
