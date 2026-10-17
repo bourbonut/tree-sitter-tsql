@@ -4852,39 +4852,52 @@ module.exports = grammar({
       optional(choice(seq(ON, field("filegroup", $.id_)), DEFAULT))
     ),
 
-    queue_settings: $ => (
-            seq(WITH, optional(seq(STATUS, EQUAL, $.on_off, optional(COMMA)),), optional(seq(RETENTION, EQUAL, $.on_off, optional(COMMA)),), optional(
-        seq(ACTIVATION, LR_BRACKET, choice(
-                (
-        seq((STATUS, EQUAL, $.on_off, optional(COMMA))?, (),
-        seq(PROCEDURE_NAME, EQUAL, $.func_proc_name_database_schema, optional(COMMA)),
-        seq()?, (MAX_QUEUE_READERS, EQUAL, field("max_readers", DECIMAL), optional(COMMA))?, optional(
-        seq(EXECUTE, AS, choice(seq(SELF, field("user_name", STRING), OWNER),), optional(COMMA))
-                    ),)
-                ),
-                DRO
-            ), RR_BRACKET, optional(COMMA))
-        ), optional(seq(POISON_MESSAGE_HANDLING, LR_BRACKET, (seq(STATUS, EQUAL, $.on_off),), RR_BRACKET),)),
+    queue_settings: $ => seq(
+      WITH,
+      optional(seq(STATUS, EQUAL, $.on_off, optional(COMMA))),
+      optional(seq(RETENTION, EQUAL, $.on_off, optional(COMMA))),
+      optional(seq(ACTIVATION, LR_BRACKET, choice(
+        seq(
+          optional(seq(STATUS, EQUAL, $.on_off, optional(COMMA))),
+          seq(PROCEDURE_NAME, EQUAL, $.func_proc_name_database_schema, optional(COMMA)),
+          optional(seq(MAX_QUEUE_READERS, EQUAL, field("max_readers", DECIMAL), optional(COMMA))),
+          optional(seq(EXECUTE, AS, choice(SELF, field("user_name", STRING), OWNER), optional(COMMA))),
+        ),
+        DROP
+      ), RR_BRACKET, optional(COMMA))),
+      optional(seq(POISON_MESSAGE_HANDLING, LR_BRACKET, optional(seq(STATUS, EQUAL, $.on_off)), RR_BRACKET)),
     ),
 
-    alter_queue: $ => (
-            seq(ALTER, QUEUE, choice(seq($.full_table_name, field("queue_name", $.id_))), choice(seq($.queue_settings, $.queue_action),)),
+    alter_queue: $ => seq(
+      ALTER,
+      QUEUE,
+      choice(seq($.full_table_name, field("queue_name", $.id_))),
+      choice(seq($.queue_settings, $.queue_action))
     ),
+
 
     queue_action: $ => choice(
-            seq(REBUILD, optional(seq(WITH, LR_BRACKET, $.queue_rebuild_options, RR_BRACKET),)),
-        seq(REORGANIZE, optional(seq(WITH, LOB_COMPACTION, EQUAL, $.on_off),)),
-        seq(MOVE, TO, choice(seq($.id_, DEFAULT),)),
+      seq(REBUILD, optional(seq(WITH, LR_BRACKET, $.queue_rebuild_options, RR_BRACKET))),
+      seq(REORGANIZE, optional(seq(WITH, LOB_COMPACTION, EQUAL, $.on_off))),
+      seq(MOVE, TO, choice($.id_, DEFAULT)),
     ),
 
-    queue_rebuild_options: $ => (
-            seq(MAXDOP, EQUAL, DECIMAL),
-    ),
+    queue_rebuild_options: $ => seq(MAXDOP, EQUAL, DECIMAL),
 
-    create_contract: $ => (
-            seq(CREATE, CONTRACT, $.contract_name, optional(seq(AUTHORIZATION, field("owner_name", $.id_))), LR_BRACKET, repeat1(choice(
-        seq((field("message_type_name", $.id_), DEFAULT), SENT, BY, choice(seq(INITIATOR, TARGET, ANY),), optional(COMMA))
-        ),), RR_BRACKET),
+    create_contract: $ => seq(
+      CREATE,
+      CONTRACT,
+      $.contract_name,
+      optional(seq(AUTHORIZATION, field("owner_name", $.id_))),
+      LR_BRACKET,
+      repeat1(choice(seq(
+        choice(field("message_type_name", $.id_), DEFAULT),
+        SENT,
+        BY,
+        choice(INITIATOR, TARGET, ANY),
+        optional(COMMA)
+      ))),
+      RR_BRACKET
     ),
 
     conversation_statement: $ => choice(
@@ -4893,49 +4906,75 @@ module.exports = grammar({
         $.end_conversation,
         $.get_conversation,
         $.send_conversation,
-        $.waitfor_conversatio,
+        $.waitfor_conversation,
     ),
 
-    message_statement: $ => (
-            seq(CREATE, MESSAGE, TYPE, field("message_type_name", $.id_), optional(seq(AUTHORIZATION, field("owner_name", $.id_))), (
-        seq(VALIDATION, EQUAL, choice(
-                NONE,
-                EMPTY,
-                WELL_FORMED_XML,
-        seq(VALID_XML, WITH, SCHEMA, COLLECTION, field("schema_collection_name", $.id_))
-            ),)
-        ),),
+    message_statement: $ => seq(
+      CREATE,
+      MESSAGE,
+      TYPE,
+      field("message_type_name", $.id_),
+      optional(seq(AUTHORIZATION, field("owner_name", $.id_))),
+      seq(
+        VALIDATION,
+        EQUAL,
+        choice(NONE, EMPTY, WELL_FORMED_XML, seq(VALID_XML, WITH, SCHEMA, COLLECTION, field("schema_collection_name", $.id_))),
+      ),
     ),
 
     // DML
 
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql
     // note that there's a limit on number of when_matches but it has to be done runtime due to different ordering of statements allowed
-    merge_statement: $ => (
-            seq(optional($.with_expression), MERGE, optional(seq(TOP, '(', $.expression, ')', PERCENT?),), INTO?, $.ddl_object, optional($.with_table_hints), optional($.as_table_alias), USING, $.table_sources, ON),
-        seq($.search_condition, repeat1($.when_matches), optional($.output_clause), optional($.option_clause), ';'),
+    merge_statement: $ => seq(
+      optional($.with_expression),
+      MERGE,
+      optional(seq(TOP, '(', $.expression, ')', optional(PERCENT))),
+      optional(INTO),
+      $.ddl_object,
+      optional($.with_table_hints),
+      optional($.as_table_alias),
+      USING,
+      $.table_sources,
+      ON,
+      $.search_condition,
+      repeat1($.when_matches),
+      optional($.output_clause),
+      optional($.option_clause),
+      ';'
     ),
 
     when_matches: $ => choice(
-        repeat1(seq(WHEN, MATCHED, optional(seq(AND, $.search_condition),), THEN, $.merge_matched),),
-        (seq(WHEN, NOT, MATCHED, (BY, TARGET)?, optional(seq(AND, $.search_condition),), THEN, $.merge_not_matched),),
-        ########,
+        repeat1(seq(WHEN, MATCHED, optional(seq(AND, $.search_condition)), THEN, $.merge_matched)),
+        seq(WHEN, NOT, MATCHED, optional(seq(BY, TARGET)), optional(seq(AND, $.search_condition)), THEN, $.merge_not_matched),
+        repeat1(seq(WHEN, NOT, MATCHED, BY, SOURCE, optional(seq(AND, $.search_condition)), THEN, $.merge_matched)),
     ),
 
     merge_matched: $ => choice(
-            seq(UPDATE, SET, $.update_elem_merge, repeat(seq(',', $.update_elem_merge),)),
-        DELET,
+        seq(UPDATE, SET, $.update_elem_merge, repeat(seq(',', $.update_elem_merge),)),
+        DELETE,
     ),
 
-    merge_not_matched: $ => (
-            seq(INSERT, optional(seq('(', $.column_name_list, ')'),), choice(seq($.table_value_constructor, DEFAULT, VALUES),)),
+    merge_not_matched: $ => seq(
+      INSERT,
+      optional(seq('(', $.column_name_list, ')'),),
+      choice(seq($.table_value_constructor, DEFAULT, VALUES),)
     ),
 
     // https://msdn.microsoft.com/en-us/library/ms189835.aspx
-    delete_statement: $ => (
-            seq(optional($.with_expression), DELETE, optional(choice(seq(TOP, '(', $.expression, ')', PERCENT?, TOP, DECIMAL),)), FROM?, $.delete_statement_from, optional($.with_table_hints), optional($.output_clause), optional(
-        seq(FROM, $.table_sources)
-        ), optional(seq(WHERE, choice(seq($.search_condition, CURRENT, OF, choice(seq(GLOBAL?, $.cursor_name, field("cursor_var", LOCAL_ID)))),)),), optional($.for_clause), optional($.option_clause), optional(';')),
+    delete_statement: $ => seq(
+      optional($.with_expression),
+      DELETE,
+      optional(choice(seq(TOP, '(', $.expression, ')', PERCENT?, TOP, DECIMAL),)),
+      FROM?,
+      $.delete_statement_from,
+      optional($.with_table_hints),
+      optional($.output_clause),
+      optional(seq(FROM, $.table_sources)),
+      optional(seq(WHERE, choice(seq($.search_condition, CURRENT, OF, choice(seq(GLOBAL?, $.cursor_name, field("cursor_var", LOCAL_ID)))),)),),
+      optional($.for_clause),
+      optional($.option_clause),
+      optional(';')
     ),
 
     delete_statement_from: $ => choice(
