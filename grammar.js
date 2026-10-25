@@ -4994,11 +4994,22 @@ module.exports = grammar({
     ),
 
     // https://msdn.microsoft.com/en-us/library/ms174335.aspx
-    insert_statement: $ => (
-            seq(optional($.with_expression), INSERT, optional(seq(TOP, '(', $.expression, ')', PERCENT?),), INTO?, choice(
+    insert_statement: $ => seq(
+        optional($.with_expression),
+        INSERT,
+        optional(seq(TOP, '(', $.expression, ')', optional(PERCENT))),
+        optional(INTO),
+        choice(
             $.ddl_object,
-            $.rowset_function_limite
-        ), optional($.with_table_hints), optional(seq('(', $.insert_column_name_list, ')'),), optional($.output_clause), $.insert_statement_value, optional($.for_clause), optional($.option_clause), optional(';')),
+            $.rowset_function_limited,
+        ),
+        optional($.with_table_hints),
+        optional(seq('(', $.insert_column_name_list, ')')),
+        optional($.output_clause),
+        $.insert_statement_value,
+        optional($.for_clause),
+        optional($.option_clause),
+        optional(';'),
     ),
 
     insert_statement_value: $ => choice(
@@ -5032,7 +5043,7 @@ module.exports = grammar({
     update_statement: $ => (
             seq(optional($.with_expression), UPDATE, optional(seq(TOP, '(', $.expression, ')', PERCENT?),), choice(
             $.ddl_object,
-            $.rowset_function_limite
+            $.rowset_function_limited,
         ), optional($.with_table_hints), SET, $.update_elem, repeat(seq(',', $.update_elem),), optional($.output_clause), optional(seq(FROM, $.table_sources),), optional(
         seq(WHERE, choice(seq($.search_condition, CURRENT, OF, choice(seq(GLOBAL?, $.cursor_name, field("cursor_var", LOCAL_ID)))),))
         ), optional($.for_clause), optional($.option_clause), optional(';')),
