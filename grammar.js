@@ -3128,8 +3128,6 @@ module.exports = grammar({
       field("broker_service_specifier_or_current_database", STRING),
     ),
 
-    // MARKER
-
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-event-session-transact-sql
     // https://docs.microsoft.com/en-us/sql/t-sql/statements/create-event-session-transact-sql
     // todo: not implemented
@@ -3960,8 +3958,6 @@ module.exports = grammar({
       field("role_name", $.id_),
       choice(seq(choice(seq(ADD, DROP)), MEMBER, field("database_principal", $.id_)), seq(WITH, NAME, EQUAL, field("new_role_name", $.id_))),
     ),
-
-    // MARKER
 
     // https://learn.microsoft.com/en-us/sql/t-sql/statements/create-database-audit-specification-transact-optional($.sql)view=sql-server-ver16
     create_database_audit_specification: $ => seq(
@@ -4961,17 +4957,31 @@ module.exports = grammar({
       choice(seq($.table_value_constructor, DEFAULT, VALUES),)
     ),
 
+    // MARKER
+
     // https://msdn.microsoft.com/en-us/library/ms189835.aspx
     delete_statement: $ => seq(
       optional($.with_expression),
       DELETE,
-      optional(choice(seq(TOP, '(', $.expression, ')', PERCENT?, TOP, DECIMAL),)),
-      FROM?,
+      optional(choice(
+        seq(TOP, '(', $.expression, ')', optional(PERCENT)),
+        seq(TOP, DECIMAL)
+      )),
+      optional(FROM),
       $.delete_statement_from,
       optional($.with_table_hints),
       optional($.output_clause),
       optional(seq(FROM, $.table_sources)),
-      optional(seq(WHERE, choice(seq($.search_condition, CURRENT, OF, choice(seq(GLOBAL?, $.cursor_name, field("cursor_var", LOCAL_ID)))),)),),
+      optional(seq(
+        WHERE,
+        choice(
+          $.search_condition,
+          seq(CURRENT, OF, choice(
+            seq(optional(GLOBAL), $.cursor_name),
+            seq(field("cursor_var", LOCAL_ID))
+          ))
+        )
+      )),
       optional($.for_clause),
       optional($.option_clause),
       optional(';')
@@ -5010,11 +5020,12 @@ module.exports = grammar({
     ),
 
     select_statement: $ => (
-            seq($.query_expression, optional($.select_order_by_clause), optional($.for_clause), optional($.option_clause), optional(';')),
+        seq($.query_expression, optional($.select_order_by_clause), optional($.for_clause), optional($.option_clause), optional(';')),
     ),
 
-    time: $ => (
-        ########,
+    time: $ => choice(
+      LOCAL_ID,
+      $.constant,
     ),
 
     // https://msdn.microsoft.com/en-us/library/ms177523.aspx
@@ -9154,9 +9165,6 @@ module.exports = grammar({
     ),
 
     // ***************************************************************************************************************
-
-
-    // MARKER
 
     table_source_item: $ => choice(
       seq($.full_table_name, $.deprecated_table_hint, $.as_table_alias), // this is currently allowed
