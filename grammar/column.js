@@ -61,12 +61,12 @@ module.exports = {
   // https://msdn.microsoft.com/en-us/library/ms187742.aspx
   // There is a documentation error: column definition elements can be given in
   // any order
-  column_definition: $ => seq($.id_, choice(seq(
-    $.data_type,
-    AS,
-    $.expression,
-    PERSISTED?
-  )), repeat($.column_definition_element), optional($.column_index)),
+  column_definition: $ => seq(
+    $.id_,
+    choice(seq($.data_type, AS, $.expression, optional(PERSISTED))),
+    repeat($.column_definition_element),
+    optional($.column_index)
+  ),
 
   column_definition_element: $ => choice(
     FILESTREAM,
@@ -74,45 +74,58 @@ module.exports = {
     SPARSE,
     seq(MASKED, WITH, '(', FUNCTION, '=', field("mask_function", STRING), ')'),
     seq(optional(seq(CONSTRAINT, field("constraint", $.id_))), DEFAULT, field("constant_expr", $.expression)),
-    seq(IDENTITY, optional(seq('(', field("seed", DECIMAL), ',', field("increment", DECIMAL), ')'),)),
+    seq(IDENTITY, optional(seq('(', field("seed", DECIMAL), ',', field("increment", DECIMAL), ')'))),
     seq(NOT, FOR, REPLICATION),
-    seq(GENERATED, ALWAYS, AS, choice(seq(ROW, TRANSACTION_ID, SEQUENCE_NUMBER),), choice(seq(START, END),), HIDDEN_KEYWORD?),
-    ,
+    seq(GENERATED, ALWAYS, AS, choice(seq(ROW, TRANSACTION_ID, SEQUENCE_NUMBER)), choice(seq(START, END)), optional(HIDDEN_KEYWORD)),
+    // NULL / NOT NULL is a constraint
     ROWGUIDCOL,
-    seq(ENCRYPTED, WITH, '(', COLUMN_ENCRYPTION_KEY, '=', field("key_name", STRING), ',', ENCRYPTION_TYPE, '=', choice(
-      DETERMINISTIC,
-      RANDOMIZE
-    ), ',', ALGORITHM, '=', field("algo", STRING), ')'),
-    $.column_constrain,
+    seq(
+      ENCRYPTED,
+      WITH,
+      '(',
+      COLUMN_ENCRYPTION_KEY,
+      '=',
+      field("key_name", STRING),
+      ',',
+      ENCRYPTION_TYPE,
+      '=',
+      choice(DETERMINISTIC, RANDOMIZE),
+      ',',
+      ALGORITHM,
+      '=',
+      field("algo", STRING),
+      ')'
+    ),
+    $.column_constraint,
   ),
 
   column_modifier: $ => seq(
     $.id_,
-    choice(seq(ADD, DROP),),
+    choice(seq(ADD, DROP)),
     choice(
       ROWGUIDCOL,
       PERSISTED,
       seq(NOT, FOR, REPLICATION),
       SPARSE,
       HIDDEN_KEYWORD,
-      seq(MASKED, optional(seq(WITH, choice(seq(
-        FUNCTION,
-        EQUAL,
-        STRING,
-        LR_BRACKET,
-        FUNCTION,
-        EQUAL,
-        STRING,
-        RR_BRACKET
-      ),))))
+      seq(
+        MASKED,
+        optional(seq(
+          WITH,
+          choice(
+            seq(FUNCTION, EQUAL, STRING),
+            seq(LR_BRACKET, FUNCTION, EQUAL, STRING, RR_BRACKET)
+          )
+        ))
+      )
     ),
   ),
 
   materialized_column_definition: $ => seq(
     $.id_,
-    choice(seq(COMPUTE, AS),),
+    choice(seq(COMPUTE, AS)),
     $.expression,
-    optional(choice(seq(MATERIALIZED, NOT, MATERIALIZED),))
+    optional(choice(seq(MATERIALIZED, seq(NOT, MATERIALIZED))))
   ),
 
   // https://msdn.microsoft.com/en-us/library/ms186712.aspx
@@ -120,12 +133,16 @@ module.exports = {
   // and therefore can be given a name.
   column_constraint: $ => seq(
     optional(seq(CONSTRAINT, field("constraint", $.id_))),
-    choice($.null_notnull, seq((
-      ,
-      (PRIMARY, KEY, UNIQUE),
-      optional($.clustered),
-      $.primary_key_options
-    )), (seq(optional(seq(FOREIGN, KEY),), $.foreign_key_options),), $.check_constrain),
+    choice(
+      $.null_notnull,
+      seq(
+        choice(seq(PRIMARY, KEY), UNIQUE),
+        optional($.clustered),
+        $.primary_key_options
+      ),
+      seq(optional(seq(FOREIGN, KEY)), $.foreign_key_options),
+      $.check_constraint
+    ),
   ),
 
   column_index: $ => seq(
@@ -134,6 +151,6 @@ module.exports = {
     optional($.clustered),
     optional($.create_table_index_options),
     optional($.on_partition_or_filegroup),
-    optional(seq(FILESTREAM_ON, choice(seq(field("filestream_filegroup_or_partition_schema_name", $.id_), NULL_DOUBLE_QUOTE),))),
+    optional(seq(FILESTREAM_ON, choice(seq(field("filestream_filegroup_or_partition_schema_name", $.id_), NULL_DOUBLE_QUOTE)))),
   ),
 }
