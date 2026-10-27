@@ -37,28 +37,36 @@ module.exports = {
   declare_cursor: $ => seq(
     DECLARE,
     $.cursor_name,
-    choice(seq(CURSOR, ($.declare_set_cursor_common, (FOR, UPDATE, (OF, column_name_list)?)?)?), seq((SEMI_SENSITIVE, INSENSITIVE)?, SCROLL?, CURSOR, FOR, $.select_statement_standalone, optional( seq(FOR, choice(seq(READ, ONLY, UPDATE, (seq(OF, $.column_name_list),)))) ),)),
+    choice(
+      seq(CURSOR, ($.declare_set_cursor_common, (FOR, UPDATE, (OF, column_name_list)?)?)?),
+      seq(
+        optional(choice(SEMI_SENSITIVE, INSENSITIVE)),
+        optional(SCROLL),
+        CURSOR,
+        FOR,
+        $.select_statement_standalone,
+        optional(seq(FOR, choice(seq(READ, ONLY, UPDATE, seq(OF, $.column_name_list)))))
+      )
+    ),
     optional(';')
   ),
 
-  declare_set_cursor_common: $ => (
-    seq(repeat($.declare_set_cursor_common_partial), FOR, $.select_statement_standalone),
-  ),
+  declare_set_cursor_common: $ => seq(repeat($.declare_set_cursor_common_partial), FOR, $.select_statement_standalone),
 
   declare_set_cursor_common_partial: $ => choice(
-    choice(seq(LOCAL, GLOBAL),),
-    choice(seq(FORWARD_ONLY, SCROLL),),
-    choice(seq(STATIC, KEYSET, DYNAMIC, FAST_FORWARD),),
-    choice(seq(READ_ONLY, SCROLL_LOCKS, OPTIMISTIC),),
+    choice(LOCAL, GLOBAL),
+    choice(FORWARD_ONLY, SCROLL),
+    choice(STATIC, KEYSET, DYNAMIC, FAST_FORWARD),
+    choice(READ_ONLY, SCROLL_LOCKS, OPTIMISTIC),
     TYPE_WARNIN,
   ),
 
   fetch_cursor: $ => seq(
     FETCH,
-    optional(seq(optional(choice(seq(NEXT, PRIOR, FIRST, LAST, choice(seq(ABSOLUTE, RELATIVE),), $.expression),)), FROM),),
+    optional(seq(optional(choice(seq(NEXT, PRIOR, FIRST, LAST, choice(ABSOLUTE, RELATIVE), $.expression))), FROM)),
     optional(GLOBAL),
     $.cursor_name,
-    optional(seq(INTO, LOCAL_ID, repeat(seq(',', LOCAL_ID),))),
+    optional(seq(INTO, LOCAL_ID, repeat(seq(',', LOCAL_ID)))),
     optional(';')
   ),
 }
