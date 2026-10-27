@@ -1122,2062 +1122,2062 @@ const {
 } = require("./lexer.js");
 
 module.exports = {
-    // https://docs.microsoft.com/en-us/sql/t-sql/language-elements/expressions-transact-sql
-    // Operator precendence: https://docs.microsoft.com/en-us/sql/t-sql/language-elements/operator-precedence-transact-sql
-    expression: $ => choice(
-        $.primitive_expression,
-        $.function_call,
-        seq($.expression, '.', choice(seq($.value_call, $.query_call, $.exist_call, $.modify_call),)),
-        seq($.expression, '.', $.hierarchyid_call),
-        seq($.expression, COLLATE, $.id_),
-        $.case_expression,
-        $.full_column_name,
-        $.bracket_expression,
-        $.unary_operator_expression,
-        seq($.expression, $.op, =, choice(seq('*', '/', '%'),), $.expression),
-        seq($.expression, $.op, =, choice(seq('+', '-', '&', '^', ',', ','),), $.expression),
-        seq($.expression, $.time_zone),
-        $.over_clause,
-        DOLLAR_ACTIO,
-    ),
+  // https://docs.microsoft.com/en-us/sql/t-sql/language-elements/expressions-transact-sql
+  // Operator precendence: https://docs.microsoft.com/en-us/sql/t-sql/language-elements/operator-precedence-transact-sql
+  expression: $ => choice(
+    $.primitive_expression,
+    $.function_call,
+    seq($.expression, '.', choice(seq($.value_call, $.query_call, $.exist_call, $.modify_call),)),
+    seq($.expression, '.', $.hierarchyid_call),
+    seq($.expression, COLLATE, $.id_),
+    $.case_expression,
+    $.full_column_name,
+    $.bracket_expression,
+    $.unary_operator_expression,
+    seq($.expression, $.op, =, choice(seq('*', '/', '%'),), $.expression),
+    seq($.expression, $.op, =, choice(seq('+', '-', '&', '^', ',', ','),), $.expression),
+    seq($.expression, $.time_zone),
+    $.over_clause,
+    DOLLAR_ACTIO,
+  ),
 
-    parameter: $ => (
-        PLACEHOLDE,
-    ),
+  parameter: $ => (
+    PLACEHOLDE,
+  ),
 
-    time_zone: $ => (
-            seq(AT_KEYWORD, TIME, ZONE, $.expression),
-    ),
+  time_zone: $ => (
+    seq(AT_KEYWORD, TIME, ZONE, $.expression),
+  ),
 
-    primitive_expression: $ => choice(
-        DEFAULT,
-        NULL$._,
-        LOCAL_ID,
-        $.primitive_constan,
-    ),
+  primitive_expression: $ => choice(
+    DEFAULT,
+    NULL$._,
+    LOCAL_ID,
+    $.primitive_constan,
+  ),
 
-    // https://docs.microsoft.com/en-us/sql/t-sql/language-elements/case-transact-sql
-    case_expression: $ => choice(
-            seq(CASE, field("caseExpr", $.expression), repeat1($.switch_section), optional(seq(ELSE, field("elseExpr", $.expression))), END),
-        seq(CASE, repeat1($.switch_search_condition_section), optional(seq(ELSE, field("elseExpr", $.expression))), END),
-    ),
+  // https://docs.microsoft.com/en-us/sql/t-sql/language-elements/case-transact-sql
+  case_expression: $ => choice(
+    seq(CASE, field("caseExpr", $.expression), repeat1($.switch_section), optional(seq(ELSE, field("elseExpr", $.expression))), END),
+    seq(CASE, repeat1($.switch_search_condition_section), optional(seq(ELSE, field("elseExpr", $.expression))), END),
+  ),
 
-    unary_operator_expression: $ => choice(
-            seq('~', $.expression),
-        seq($.op, =, choice(seq('+', '-'),), $.expression),
-    ),
+  unary_operator_expression: $ => choice(
+    seq('~', $.expression),
+    seq($.op, =, choice(seq('+', '-'),), $.expression),
+  ),
 
-    bracket_expression: $ => choice(
-            seq('(', $.expression, ')'),
-        seq('(', $.subquery, ')'),
-    ),
+  bracket_expression: $ => choice(
+    seq('(', $.expression, ')'),
+    seq('(', $.subquery, ')'),
+  ),
 
-    subquery: $ => (
-        $.select_statemen,
-    ),
+  subquery: $ => (
+    $.select_statemen,
+  ),
 
-    // https://msdn.microsoft.com/en-us/library/ms175972.aspx
-    with_expression: $ => (
-            seq(WITH, $.ctes, +=, $.common_table_expression, repeat(seq(',', $.ctes, +=, $.common_table_expression),)),
-    ),
+  // https://msdn.microsoft.com/en-us/library/ms175972.aspx
+  with_expression: $ => (
+    seq(WITH, $.ctes, +=, $.common_table_expression, repeat(seq(',', $.ctes, +=, $.common_table_expression),)),
+  ),
 
-    common_table_expression: $ => (
-            seq(field("expression_name", $.id_), optional(seq('(', field("columns", $.column_name_list), ')'),), AS, '(', field("cte_query", $.select_statement), ')'),
-    ),
+  common_table_expression: $ => (
+    seq(field("expression_name", $.id_), optional(seq('(', field("columns", $.column_name_list), ')'),), AS, '(', field("cte_query", $.select_statement), ')'),
+  ),
 
-    update_elem: $ => choice(
-            seq(LOCAL_ID, '=', $.full_column_name, choice(seq('=', $.assignment_operator),), $.expression),
-        seq(choice(seq($.full_column_name, LOCAL_ID),), choice(seq('=', $.assignment_operator),), $.expression),
-        seq(field("udt_column_name", $.id_), '.', field("method_name", $.id_), '(', $.expression_list_, ')'),
-        seq(//|, $.full_column_name, '.', WRITE, ($.expression,)),
-    ),
+  update_elem: $ => choice(
+    seq(LOCAL_ID, '=', $.full_column_name, choice(seq('=', $.assignment_operator),), $.expression),
+    seq(choice(seq($.full_column_name, LOCAL_ID),), choice(seq('=', $.assignment_operator),), $.expression),
+    seq(field("udt_column_name", $.id_), '.', field("method_name", $.id_), '(', $.expression_list_, ')'),
+    seq(//|, $.full_column_name, '.', WRITE, ($.expression,)),
+  ),
 
-    update_elem_merge: $ => choice(
-            seq(choice(seq($.full_column_name, LOCAL_ID),), choice(seq('=', $.assignment_operator),), $.expression),
-        seq(field("udt_column_name", $.id_), '.', field("method_name", $.id_), '(', $.expression_list_, ')'),
-        seq(//|, $.full_column_name, '.', WRITE, ($.expression,)),
-    ),
+  update_elem_merge: $ => choice(
+    seq(choice(seq($.full_column_name, LOCAL_ID),), choice(seq('=', $.assignment_operator),), $.expression),
+    seq(field("udt_column_name", $.id_), '.', field("method_name", $.id_), '(', $.expression_list_, ')'),
+    seq(//|, $.full_column_name, '.', WRITE, ($.expression,)),
+  ),
 
-    // https://docs.microsoft.com/en-us/sql/t-sql/queries/search-condition-transact-sql
-    search_condition: $ => choice(
-            seq(NOT*, choice(seq($.predicate, '(', $.search_condition, ')'),)),
-        seq($.search_condition, AND, $.search_condition),
-        seq($.search_condition, OR, $.search_condition),
-    ),
+  // https://docs.microsoft.com/en-us/sql/t-sql/queries/search-condition-transact-sql
+  search_condition: $ => choice(
+    seq(NOT*, choice(seq($.predicate, '(', $.search_condition, ')'),)),
+    seq($.search_condition, AND, $.search_condition),
+    seq($.search_condition, OR, $.search_condition),
+  ),
 
-    predicate: $ => choice(
-            seq(EXISTS, '(', $.subquery, ')'),
-        $.freetext_predicate,
-        seq($.expression, $.comparison_operator, $.expression),
-        seq($.expression, MULT_ASSIGN, $.expression, ////SQL-82, $.syntax, $.for, $.left, $.outer, joins;, '*='., S$.ee, https:),
-        seq($.expression, $.comparison_operator, choice(seq(ALL, SOME, ANY),), '(', $.subquery, ')'),
-        seq($.expression, NOT*, BETWEEN, $.expression, AND, $.expression),
-        seq($.expression, NOT*, IN, '(', choice(seq($.subquery, $.expression_list_),), ')'),
-        seq($.expression, NOT*, LIKE, $.expression, optional(seq(ESCAPE, $.expression),)),
-        seq($.expression, IS, $.null_notnull),
-    ),
+  predicate: $ => choice(
+    seq(EXISTS, '(', $.subquery, ')'),
+    $.freetext_predicate,
+    seq($.expression, $.comparison_operator, $.expression),
+    seq($.expression, MULT_ASSIGN, $.expression, ////SQL-82, $.syntax, $.for, $.left, $.outer, joins;, '*='., S$.ee, https:),
+    seq($.expression, $.comparison_operator, choice(seq(ALL, SOME, ANY),), '(', $.subquery, ')'),
+    seq($.expression, NOT*, BETWEEN, $.expression, AND, $.expression),
+    seq($.expression, NOT*, IN, '(', choice(seq($.subquery, $.expression_list_),), ')'),
+    seq($.expression, NOT*, LIKE, $.expression, optional(seq(ESCAPE, $.expression),)),
+    seq($.expression, IS, $.null_notnull),
+  ),
 
-    // Changed union rule to sql_union to avoid union construct with C++ target.  Issue reported by person who generates into C++.  This individual reports change causes generated code to work
+  // Changed union rule to sql_union to avoid union construct with C++ target.  Issue reported by person who generates into C++.  This individual reports change causes generated code to work
 
-    query_expression: $ => choice(
-            seq($.query_specificati$.on, select_$.order_optional($.by_clause), $.uni$.ons, +=, sql_$.unirepeat($.on), $.order, $.by, $.can, $.be, $.on, $.the, "top", $.side, $.of, $.uni$.on, :/),
-        seq('(', $.query_expression, ')', optional(seq(UNION, ALL?, $.query_expression),)),
-    ),
+  query_expression: $ => choice(
+    seq($.query_specificati$.on, select_$.order_optional($.by_clause), $.uni$.ons, +=, sql_$.unirepeat($.on), $.order, $.by, $.can, $.be, $.on, $.the, "top", $.side, $.of, $.uni$.on, :/),
+    seq('(', $.query_expression, ')', optional(seq(UNION, ALL?, $.query_expression),)),
+  ),
 
-    sql_union: $ => (
-            seq(choice(seq(UNION, ALL?, EXCEPT, INTERSECT),), choice(
-        seq(field("spec", $.query_specification)),
-            #######
-        ),),
-    ),
+  sql_union: $ => (
+    seq(choice(seq(UNION, ALL?, EXCEPT, INTERSECT),), choice(
+      seq(field("spec", $.query_specification)),
+      #######
+    ),),
+  ),
 
-    // https://msdn.microsoft.com/en-us/library/ms176104.aspx
-    query_specification: $ => (
-            seq(SELECT, allOrD$.istinct, =, optional(choice(seq(ALL, DISTINCT),)), field("top", optional($.top_clause)), field("columns", $.select_list)),
-        seq(//, https://msdn.microsoft.com/en-us/library/ms188029.$.aspx),
-        seq(optional(seq(INTO, field("into", $.table_name))), optional(seq(FROM, field("from", $.table_sources)),), optional(seq(WHERE, field("where", $.search_condition)),)),
-        seq(//, https://msdn.microsoft.com/en-us/library/ms177673.$.aspx),
-        seq(optional(
-        seq(GROUP, BY, choice(
+  // https://msdn.microsoft.com/en-us/library/ms176104.aspx
+  query_specification: $ => (
+    seq(SELECT, allOrD$.istinct, =, optional(choice(seq(ALL, DISTINCT),)), field("top", optional($.top_clause)), field("columns", $.select_list)),
+    seq(//, https://msdn.microsoft.com/en-us/library/ms188029.$.aspx),
+    seq(optional(seq(INTO, field("into", $.table_name))), optional(seq(FROM, field("from", $.table_sources)),), optional(seq(WHERE, field("where", $.search_condition)),)),
+    seq(//, https://msdn.microsoft.com/en-us/library/ms177673.$.aspx),
+    seq(optional(
+      seq(GROUP, BY, choice(
         seq((field("groupByAll", ALL?), groupB$.ys, +=, $.group_by_item, (',', groupB$.ys, +=, $.group_by_item)*)),
         seq(GROUPING, SETS, '(', groupS$.ets, +=, $.grouping_s$.ets_item, repeat(
-        seq(',', groupS$.ets, +=, $.grouping_s$.ets_item)
-                ), ')')
-            ),)
-        ), optional(seq(HAVING, field("having", $.search_condition)))),
-    ),
+          seq(',', groupS$.ets, +=, $.grouping_s$.ets_item)
+        ), ')')
+      ),)
+    ), optional(seq(HAVING, field("having", $.search_condition)))),
+  ),
 
-    // https://msdn.microsoft.com/en-us/library/ms189463.aspx
-    top_clause: $ => (
-            seq(TOP, choice(seq($.top_percent, $.top_count),), optional(seq(WITH, TIES),)),
-    ),
+  // https://msdn.microsoft.com/en-us/library/ms189463.aspx
+  top_clause: $ => (
+    seq(TOP, choice(seq($.top_percent, $.top_count),), optional(seq(WITH, TIES),)),
+  ),
 
-    top_percent: $ => choice(
-            seq($.percent_constant, =, choice(seq(REAL, FLOAT, DECIMAL),), PERCENT),
-        seq('(', field("topper_expression", $.expression), ')', PERCENT),
-    ),
+  top_percent: $ => choice(
+    seq($.percent_constant, =, choice(seq(REAL, FLOAT, DECIMAL),), PERCENT),
+    seq('(', field("topper_expression", $.expression), ')', PERCENT),
+  ),
 
-    top_count: $ => choice(
-            seq(field("count_constant", DECIMAL)),
-        seq('(', field("topcount_expression", $.expression), ')'),
-    ),
+  top_count: $ => choice(
+    seq(field("count_constant", DECIMAL)),
+    seq('(', field("topcount_expression", $.expression), ')'),
+  ),
 
-    // https://docs.microsoft.com/en-us/sql/t-sql/queries/select-over-clause-transact-optional($.sql)view=sql-server-ver16
-    order_by_clause: $ => (
-            seq(ORDER, BY, $.order_bys, +=, $.order_by_expression, repeat(seq(',', $.order_bys, +=, $.order_by_expression),)),
-    ),
+  // https://docs.microsoft.com/en-us/sql/t-sql/queries/select-over-clause-transact-optional($.sql)view=sql-server-ver16
+  order_by_clause: $ => (
+    seq(ORDER, BY, $.order_bys, +=, $.order_by_expression, repeat(seq(',', $.order_bys, +=, $.order_by_expression),)),
+  ),
 
-    // https://msdn.microsoft.com/en-us/library/ms188385.aspx
-    select_order_by_clause: $ => (
-            seq($.order_by_clause, optional(choice(
-        seq(OFFSET, field("offset_exp", $.expression), $.offset_rows, =, (ROW, ROWS), optional(choice(
+  // https://msdn.microsoft.com/en-us/library/ms188385.aspx
+  select_order_by_clause: $ => (
+    seq($.order_by_clause, optional(choice(
+      seq(OFFSET, field("offset_exp", $.expression), $.offset_rows, =, (ROW, ROWS), optional(choice(
         seq(FETCH, $.fetch_offset, =, (FIRST, NEXT), field("fetch_exp", $.expression), $.fetch_rows, =, choice(seq(ROW, ROWS),), ONLY)
-            ),))
-        ),)),
-    ),
-
-    // https://docs.microsoft.com/en-us/sql/t-sql/queries/select-for-clause-transact-sql
-    for_clause: $ => choice(
-            seq(FOR, BROWSE),
-        seq(FOR, XML, (RAW, optional(seq('(', STRING, ')'),), |, AUTO), repeat($.xml_common_directives), (),
-        seq(COMMA, (XMLDATA, |, XMLSCHEMA, optional(seq('(', STRING, ')'),))),
-        seq()?, optional(seq(COMMA, ELEMENTS, optional(choice(seq(XSINIL, ABSENT),))))),
-        seq(FOR, XML, EXPLICIT, repeat($.xml_common_directives), optional(seq(COMMA, XMLDATA),)),
-        seq(FOR, XML, PATH, optional(seq('(', STRING, ')'),), repeat($.xml_common_directives), optional(seq(COMMA, ELEMENTS, optional(choice(seq(XSINIL, ABSENT),))))),
-        seq(FOR, JSON, choice(seq(AUTO, PATH),), repeat(
-        seq(COMMA, choice(seq(ROOT, (seq('(', STRING, ')'),), INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER),))
-        ),),
-    ),
-
-    xml_common_directives: $ => (
-            seq(',', choice(seq(BINARY_KEYWORD, BASE64, TYPE, ROOT, optional(seq('(', STRING, ')'),)))),
-    ),
-
-    order_by_expression: $ => (
-            seq(field("order_by", $.expression), optional(choice(seq(field("ascending", ASC), field("descending", DESC))))),
-    ),
-
-    // https://docs.microsoft.com/en-us/sql/t-sql/queries/select-group-by-transact-optional($.sql)view=sql-server-ver15
-    grouping_sets_item: $ => choice(
-            seq(optional('('), groupSetI$.tems, +=, $.group_by_item, repeat(seq(',', groupSetI$.tems, +=, $.group_by_item),), optional(')')),
-        seq('(', ')'),
-    ),
-
-    group_by_item: $ => (
-        $.expressio,
-        seq(/*|, $.rollup_spec),
-        $.cube_spec,
-        $.grouping_sets_spec,
-        repeat($.grand_total),
-    ),
-
-    option_clause
-        // https://msdn.microsoft.com/en-us/library/ms181714.aspx: $ => (
-            seq(OPTION, '(', $.$.options_, +=, $.option, repeat(seq(',', $.$.options_, +=, $.option),), ')'),
-    ),
-
-    option: $ => choice(
-            seq(FAST, field("number_rows", DECIMAL)),
-        seq(choice(seq(HASH, ORDER),), GROUP),
-        seq(choice(seq(MERGE, HASH, CONCAT),), UNION),
-        seq(choice(seq(LOOP, MERGE, HASH),), JOIN),
-        seq(EXPAND, VIEWS),
-        seq(FORCE, ORDER),
-        IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX,
-        seq(KEEP, PLAN),
-        seq(KEEPFIXED, PLAN),
-        seq(MAXDOP, field("number_of_processors", DECIMAL)),
-        seq(MAXRECURSION, field("number_recursion", DECIMAL)),
-        seq(OPTIMIZE, FOR, '(', $.optimize_for_arg, repeat(seq(',', $.optimize_for_arg),), ')'),
-        seq(OPTIMIZE, FOR, UNKNOWN),
-        seq(PARAMETERIZATION, choice(seq(SIMPLE, FORCED),)),
-        RECOMPILE,
-        seq(ROBUST, PLAN),
-        seq(USE, PLAN, STRING),
-    ),
-
-    optimize_for_arg: $ => (
-            seq(LOCAL_ID, choice(seq(UNKNOWN, '=', choice(seq($.constant, NULL$._),)))),
-    ),
-
-    // https://msdn.microsoft.com/en-us/library/ms176104.aspx
-    select_list: $ => (
-            seq($.selectE$.lement, +=, $.select_list_elem, repeat(seq(',', selectE$.lement, +=, $.select_list_elem),)),
-    ),
-
-    udt_method_arguments: $ => (
-            seq('(', $.argument, +=, $.execute_var_string, repeat(seq(',', $.argument, +=, $.execute_var_string),), ')'),
-    ),
-
-    // https://docs.microsoft.com/ru-ru/sql/t-sql/queries/select-clause-transact-sql
-    asterisk: $ => choice(
-            seq(optional(seq($.table_name, '.'),), '*'),
-        seq(choice(seq(INSERTED, DELETED),), '.repeat(', ')'),
-    ),
-
-    udt_elem: $ => choice(
-            seq(field("udt_column_name", $.id_), '.', field("non_static_attr", $.id_), $.udt_method_arguments, optional($.as_column_alias)),
-        seq(field("udt_column_name", $.id_), DOUBLE_COLON, field("static_attr", $.id_), optional($.udt_method_arguments), optional($.as_column_alias)),
-    ),
-
-    expression_elem: $ => choice(
-            seq(field("leftAlias", $.column_alias), $.eq, =, '=', field("leftAssignment", $.expression)),
-        seq(field("expressionAs", $.expression), optional($.as_column_alias)),
-    ),
-
-    select_list_elem: $ => choice(
-        $.asterisk,
-        $.udt_elem,
-        seq(LOCAL_ID, choice(seq($.assignment_operator, '='),), $.expression),
-        $.expression_ele,
-    ),
-
-    table_sources: $ => choice(
-        $.non_ansi_join,
-        seq($.source, +=, table_$.source, repeat(seq(',', $.source, +=, table_$.source),)),
-    ),
-
-    // sqlenlight.com/support/help/sa0006/
-    // stale link
-    non_ansi_join: $ => (
-            seq($.source, +=, table_$.source, repeat1(seq(',', $.source, +=, table_$.source),)),
-    ),
-
-    // https://docs.microsoft.com/en-us/sql/t-sql/queries/from-transact-sql
-    table_source: $ => (
-            seq($.table_source_item, $.joins, +=, repeat($.join_part)),
-    ),
-
-    table_source_item: $ => choice(
-            seq($.full_table_name, $.deprecated_table_hint, $.as_table_alias),
-        seq($.full_table_name, optional($.as_table_alias), optional(choice(
-            $.with_table_hints,
-            $.deprecated_table_hint,
-            $.sybase_legacy_hint
-        ),)),
-        seq($.rowset_function, optional($.as_table_alias)),
-        seq('(', $.derived_table, ')', (#######,)),
-        seq($.change_table, optional($.as_table_alias)),
-        seq($.nodes_method, (#######,)),
-        seq($.function_call, (#######,)),
-        seq(field("loc_id", LOCAL_ID), optional($.as_table_alias)),
-        seq(field("loc_id_call", LOCAL_ID), '.', field("loc_fcall", $.function_call), (#######,)),
-        $.open_xml,
-        $.open_json,
-        seq(DOUBLE_COLON, field("oldstyle_fcall", $.function_call), optional($.as_table_alias)),
-        seq('(', $.table_source, ')'),
-    ),
-
-    // https://docs.microsoft.com/en-us/sql/t-sql/functions/openxml-transact-sql
-    open_xml: $ => (
-            seq(OPENXML, '(', $.expression, ',', $.expression, optional(seq(',', $.expression),), ')', optional(seq(WITH, '(', $.schema_declaration, ')'),), optional($.as_table_alias)),
-    ),
-
-    open_json: $ => (
-            seq(OPENJSON, '(', $.expression, optional(seq(',', $.expression),), ')', optional(seq(WITH, '(', $.json_declaration, ')'),), optional($.as_table_alias)),
-    ),
-
-    json_declaration: $ => (
-            seq($.json_col, +=, $.$.json_column_declaration, repeat(seq(',', $.json_col, +=, $.$.json_column_declaration),)),
-    ),
-
-    json_column_declaration: $ => (
-            seq($.column_declaration, optional(seq(AS, JSON),)),
-    ),
-
-    schema_declaration: $ => (
-            seq($.xml_col, +=, $.column_declaration, repeat(seq(',', $.xml_col, +=, $.column_declaration),)),
-    ),
-
-    column_declaration: $ => (
-            seq($.id_, $.data_type, STRING?),
-    ),
-
-    change_table: $ => choice(
-        $.change_table_changes,
-        $.change_table_versio,
-    ),
-
-    change_table_changes: $ => (
-            seq(CHANGETABLE, '(', CHANGES, field("changetable", $.table_name), ',', $.changesid, =, choice(seq(NULL$._, DECIMAL, LOCAL$._ID),), ')'),
-    ),
-
-    change_table_version: $ => (
-            seq(CHANGETABLE, '(', VERSION, field("versiontable", $.table_name), ',', field("pk_columns", $.full_column_name_list), ',', field("pk_values", $.select_list), ')'),
-    ),
-
-    // https://msdn.microsoft.com/en-us/library/ms191472.aspx
-    join_part
-        // https://msdn.microsoft.com/en-us/library/ms173815(v=sql.120).aspx: $ => choice(
-        $.join_on,
-        $.cross_join,
-        $.apply_,
-        $.pivot,
-        $.unpivo,
-    ),
-
-    join_on: $ => (
-            seq(choice(seq(field("inner", INNER?), $.join_type, =, choice(seq(LEFT, RIGHT, FULL),), field("outer", OUTER?))), optional(
-        seq($.join_hint, =, choice(seq(LOOP, HASH, MERGE, REMOTE),))
-        ), JOIN, field("source", $.table_source), ON, field("cond", $.search_condition)),
-    ),
-
-    cross_join: $ => (
-            seq(CROSS, JOIN, $.table_source_item),
-    ),
-
-    apply_: $ => (
-            seq($.apply_style, =, choice(seq(CROSS, OUTER),), APPLY, field("source", $.table_source_item)),
-    ),
-
-    pivot: $ => (
-            seq(PIVOT, $.pivot_clause, $.as_table_alias),
-    ),
-
-    unpivot: $ => (
-            seq(UNPIVOT, $.unpivot_clause, $.as_table_alias),
-    ),
-
-    pivot_clause: $ => (
-            seq('(', $.aggregate_windowed_function, FOR, $.full_column_name, IN, $.column_alias_list, ')'),
-    ),
-
-    unpivot_clause: $ => (
-            seq('(', field("unpivot_exp", $.expression), FOR, $.full_column_name, IN, '(', $.$.full_column_name_list, ')', ')'),
-    ),
-
-    full_column_name_list: $ => (
-            seq($.column, +=, $.full_$.column_name, repeat(seq(',', $.column, +=, $.full_$.column_name),)),
-    ),
-
-    // https://msdn.microsoft.com/en-us/library/ms190312.aspx
-    rowset_function: $ => (
-        (
-        seq(OPENROWSET, LR_BRACKET, field("provider_name", STRING), COMMA, field("connectionString", STRING), COMMA, field("sql", STRING), RR_BRACKET)
-        ),
-        ########,
-    ),
-
-    // runtime check.
-    bulk_option: $ => (
-            seq($.id_, '=', $.bulk_option_value, =, choice(seq(DECIMAL, STRING),)),
-    ),
-
-    derived_table: $ => choice(
-        $.subquery,
-        seq('(', $.subquery, repeat(seq(UNION, ALL, $.subquery),), ')'),
-        $.table_value_constructor,
-        seq('(', $.table_value_constructor, ')'),
-    ),
-
-    function_call: $ => choice(
-            seq($.ranking_windowed_function, #, RANKING_WINDOWED_FUNC),
-        seq($.aggregate_windowed_function, #, AGGREGATE_WINDOWED_FUNC),
-        seq($.analytic_windowed_function, #, ANALYTIC_WINDOWED_FUNC),
-        seq($.built_in_functions, #, BUILT_IN_FUNC),
-        seq($.scalar_function_name, '(', optional($.expression_list_), ')', #, SCALAR_FUNCTION),
-        seq($.freetext_function, #, FREE_TEXT),
-        seq($.partition_function, #, PARTITION_FUNC),
-        seq($.hierarchyid_static_method, #, HIERARCHYID_METHOD),
-    ),
-
-    partition_function: $ => (
-            seq(optional(seq(field("database", $.id_), '.'),), DOLLAR_PARTITION, '.', field("func_name", $.id_), '(', $.expression, ')'),
-    ),
-
-    freetext_function: $ => (
-            seq(choice(seq(CONTAINSTABLE, FREETEXTTABLE),), '(', $.table_name, ',', choice(
-            $.full_column_name,
-        seq('(', $.full_column_name, repeat(seq(',', $.full_column_name),), ')'),
-            '*
-        ), ',', $.expression, optional(seq(',', LANGUAGE, $.expression),), optional(seq(',', $.expression),), ')'),
-        seq(choice(seq(SEMANTICSIMILARITYTABLE, SEMANTICKEYPHRASETABLE),), '(', $.table_name, ',', choice(
-            $.full_column_name,
-        seq('(', $.full_column_name, repeat(seq(',', $.full_column_name),), ')'),
-            '*
-        ), ',', $.expression, ')'),
-        seq(SEMANTICSIMILARITYDETAILSTABLE, '(', $.table_name, ',', $.full_column_name, ',', $.expression, ',', $.full_column_name, ',', $.expression, ')'),
-    ),
-
-    freetext_predicate: $ => (
-            seq(CONTAINS, '(', choice(
-            $.full_column_name,
-        seq('(', $.full_column_name, repeat(seq(',', $.full_column_name),), ')'),
-            '*',
-        seq(PROPERTY, '(', $.full_column_name, ',', $.expression, ')')
-        ), ',', $.expression, ')'),
-        seq(FREETEXT, '(', $.table_name, ',', choice(
-            $.full_column_name,
-        seq('(', $.full_column_name, repeat(seq(',', $.full_column_name),), ')'),
-            '*
-        ), ',', $.expression, optional(seq(',', LANGUAGE, $.expression),), ')'),
-    ),
-
-    json_key_value: $ => (
-            seq(field("json_key_name", $.expression), ':', field("value_expression", $.expression)),
-    ),
-
-    json_null_clause: $ => (
-            seq(choice(seq(ABSENT, NULL$._),), ON, NULL$._),
-    ),
-
-    xml_data_type_methods: $ => choice(
-        $.value_method,
-        $.query_method,
-        $.exist_method,
-        $.modify_metho,
-    ),
-
-    // https://learn.microsoft.com/en-us/sql/t-sql/functions/date-bucket-transact-optional($.sql)view=sql-server-ver16
-    dateparts_9: $ => choice(
-        YEAR,
-        YEAR_ABBR,
-        QUARTER,
-        QUARTER_ABBR,
-        MONTH,
-        MONTH_ABBR,
-        DAY,
-        DAY_ABBR,
-        WEEK,
-        WEEK_ABBR,
-        HOUR,
-        HOUR_ABBR,
-        MINUTE,
-        MINUTE_ABBR,
-        SECOND,
-        SECOND_ABBR,
-        MILLISECOND,
-        MILLISECOND_ABB,
-    ),
-
-    // https://learn.microsoft.com/en-us/sql/t-sql/functions/dateadd-transact-optional($.sql)view=sql-server-ver16
-    dateparts_12: $ => choice(
-        $.dateparts_9,
-        DAYOFYEAR,
-        DAYOFYEAR_ABBR,
-        MICROSECOND,
-        MICROSECOND_ABBR,
-        NANOSECOND,
-        NANOSECOND_ABB,
-    ),
-
-    // https://learn.microsoft.com/en-us/sql/t-sql/functions/datename-transact-optional($.sql)view=sql-server-ver16
-    dateparts_15: $ => choice(
-        $.dateparts_12,
-        WEEKDAY,
-        WEEKDAY_ABBR,
-        TZOFFSET,
-        TZOFFSET_ABBR,
-        ISO_WEEK,
-        ISO_WEEK_ABB,
-    ),
-
-    // https://learn.microsoft.com/en-us/sql/t-sql/functions/datetrunc-transact-optional($.sql)view=sql-server-ver16
-    dateparts_datetrunc: $ => choice(
-        $.dateparts_9,
-        DAYOFYEAR,
-        DAYOFYEAR_ABBR,
-        MICROSECOND,
-        MICROSECOND_ABBR,
-        ISO_WEEK,
-        ISO_WEEK_ABB,
-    ),
-
-    value_method: $ => (
-            seq(choice(
-        seq(field("loc_id", LOCAL_ID)),
-        seq(field("value_id", $.full_column_name)),
-        seq(field("eventdata", EVENTDATA), '(', ')'),
-        seq(field("query", $.query_method)),
-        seq('(', $.subquery, ')')
-        ), '.', field("call", $.value_call)),
-    ),
-
-    value_call: $ => (
-            seq(choice(seq(VALUE, VALUE_SQUARE_BRACKET),), '(', field("xquery", STRING), ',', field("sqltype", STRING), ')'),
-    ),
-
-    query_method: $ => (
-            seq(choice(seq(field("loc_id", LOCAL_ID), field("value_id", $.full_column_name), '(', $.subquery, ')'),), '.', field("call", $.query_call)),
-    ),
-
-    query_call: $ => (
-            seq(choice(seq(QUERY, QUERY_SQUARE_BRACKET),), '(', field("xquery", STRING), ')'),
-    ),
-
-    exist_method: $ => (
-            seq(choice(seq(field("loc_id", LOCAL_ID), field("value_id", $.full_column_name), '(', $.subquery, ')'),), '.', field("call", $.exist_call)),
-    ),
-
-    exist_call: $ => (
-            seq(choice(seq(EXIST, EXIST_SQUARE_BRACKET),), '(', field("xquery", STRING), ')'),
-    ),
-
-    modify_method: $ => (
-            seq(choice(seq(field("loc_id", LOCAL_ID), field("value_id", $.full_column_name), '(', $.subquery, ')'),), '.', field("call", $.modify_call)),
-    ),
-
-    modify_call: $ => (
-            seq(choice(seq(MODIFY, MODIFY_SQUARE_BRACKET),), '(', field("xml_dml", STRING), ')'),
-    ),
-
-    hierarchyid_call: $ => choice(
-            seq(GETANCESTOR, '(', field("n", $.expression), ')'),
-        seq(GETDESCENDANT, '(', child1, =, $.expression, ',', child2, =, $.expression, ')'),
-        seq(GETLEVEL, '(', ')'),
-        seq(ISDESCENDANTOF, '(', field("parent_", $.expression), ')'),
-        seq(GETREPARENTEDVALUE, '(', field("oldroot", $.expression), ',', field("newroot", $.expression), ')'),
-        seq(TOSTRING, '(', ')'),
-    ),
-
-    hierarchyid_static_method: $ => (
-            seq(HIERARCHYID, DOUBLE_COLON, choice(seq(GETROOT, '(', ')', PARSE, '(', field("input", $.expression), ')'),)),
-    ),
-
-    nodes_method: $ => (
-            seq(choice(seq(field("loc_id", LOCAL_ID), field("value_id", $.full_column_name), '(', $.subquery, ')'),), '.', NODES, '(', field("xquery", STRING), ')'),
-    ),
-
-    switch_section: $ => (
-            seq(WHEN, $.expression, THEN, $.expression),
-    ),
-
-    switch_search_condition_section: $ => (
-            seq(WHEN, $.search_condition, THEN, $.expression),
-    ),
-
-    as_column_alias: $ => (
-            seq(AS?, $.column_alias),
-    ),
-
-    as_table_alias: $ => (
-            seq(AS?, $.table_alias),
-    ),
-
-    table_alias: $ => (
-        $.id,
-    ),
-
-    // https://msdn.microsoft.com/en-us/library/ms187373.aspx
-    with_table_hints: $ => (
-            seq(WITH, '(', $.hint, +=, $.table_$.hint, repeat(seq(optional(','), $.hint, +=, $.table_$.hint),), ')'),
-    ),
-
-    deprecated_table_hint: $ => (
-            seq('(', $.table_hint, ')'),
-    ),
-
-    // https://infocenter-archive.sybase.com/help/index.optional($.jsp)topic=/com.sybase.infocenter.dc00938.1502/html/locking/locking103.htm
-    // https://infocenter-archive.sybase.com/help/index.optional($.jsp)topic=/com.sybase.dc32300_1250/html/sqlug/sqlug792.htm
-    // https://infocenter-archive.sybase.com/help/index.optional($.jsp)topic=/com.sybase.dc36271_36272_36273_36274_1250/html/refman/X35229.htm
-    // Legacy hint with no parenthesis and no WITH keyword. Actually conflicts with table alias name except for holdlock which is
-    // a reserved keyword in this grammar. We might want a separate sybase grammar variant.
-    sybase_legacy_hints: $ => (
-        $.sybase_legacy_hint,
-    ),
-
-    sybase_legacy_hint: $ => choice(
-        HOLDLOCK,
-        NOHOLDLOCK,
-        READPAST,
-        SHARE,
-    ),
-
-    // For simplicity, we don't build subsets for INSERT/UPDATE/DELETE/SELECT/MERGE
-    // which means the grammar accept slightly more than the what the specification (documentation) says.
-    table_hint: $ => choice(
-        NOEXPAND,
-        seq(INDEX, choice(
-        seq('(', $.index_value, repeat(seq(',', $.index_value),), ')'),
-        seq('=', '(', $.index_value, ')'),
-        seq('=', $.$.index_value, //, $.examples, $.in, $.the, $.doc, $.$.include, $.this, $.syntax)
-        ),),
-        seq(FORCESEEK, optional(seq('(', $.index_value, '(', $.column_name_list, ')', ')'),)),
-        FORCESCAN,
-        HOLDLOCK,
-        NOLOCK,
-        NOWAIT,
-        PAGLOCK,
-        READCOMMITTED,
-        READCOMMITTEDLOCK,
-        READPAST,
-        READUNCOMMITTED,
-        REPEATABLEREAD,
-        ROWLOCK,
-        SERIALIZABLE,
-        SNAPSHOT,
-        seq(SPATIAL_WINDOW_MAX_CELLS, '=', DECIMAL),
-        TABLOCK,
-        TABLOCKX,
-        UPDLOCK,
-        XLOCK,
-        KEEPIDENTITY,
-        KEEPDEFAULTS,
-        IGNORE_CONSTRAINTS,
-        IGNORE_TRIGGER,
-    ),
-
-    index_value: $ => choice(
-        $.id_,
-        DECIMA,
-    ),
-
-    column_alias_list: $ => (
-            seq('(', $.alias, +=, $.column_$.alias, repeat(seq(',', $.alias, +=, $.column_$.alias),), ')'),
-    ),
-
-    column_alias: $ => choice(
-        $.id_,
-        STRIN,
-    ),
-
-    table_value_constructor: $ => (
-            seq(VALUES, '(', $.exps, +=, $.expression_list_, ')', repeat(seq(',', '(', $.exps, +=, $.expression_list_, ')'),)),
-    ),
-
-    expression_list_: $ => (
-            seq($.exp, +=, $.$.expression, repeat(seq(',', $.exp, +=, $.$.expression),)),
-    ),
-
-    // https://msdn.microsoft.com/en-us/library/ms189798.aspx
-    ranking_windowed_function: $ => choice(
-            seq(choice(seq(RANK, DENSE_RANK, ROW_NUMBER),), '(', ')', $.over_clause),
-        seq(NTILE, '(', $.expression, ')', $.over_clause),
-    ),
-
-    // https://msdn.microsoft.com/en-us/library/ms173454.aspx
-    aggregate_windowed_function: $ => choice(
-            seq($.agg_func, =, choice(seq(AVG, MAX, MIN, SUM, STDEV, STDEVP, VAR, VARP),), '(', $.all_distinct_expression, ')', optional($.over_clause)),
-        seq($.cnt, =, choice(seq(COUNT, COUNT_BIG),), '(', choice(seq('*', $.all_distinct_expression),), ')', optional($.over_clause)),
-        seq(CHECKSUM_AGG, '(', $.all_distinct_expression, ')'),
-        seq(GROUPING, '(', $.expression, ')'),
-        seq(GROUPING_ID, '(', $.expression_list_, ')'),
-    ),
-
-    // https://docs.microsoft.com/en-us/sql/t-sql/functions/analytic-functions-transact-sql
-    analytic_windowed_function: $ => choice(
-            seq(choice(seq(FIRST_VALUE, LAST_VALUE),), '(', $.expression, ')', $.over_clause),
-        seq(choice(seq(LAG, LEAD),), '(', $.expression, optional(seq(',', $.expression, optional(seq(',', $.expression),))), ')', $.over_clause),
-        seq(choice(seq(CUME_DIST, PERCENT_RANK),), '(', ')', OVER, '(', optional(seq(PARTITION, BY, $.expression_list_),), $.order_by_clause, ')'),
-        seq(choice(seq(PERCENTILE_CONT, PERCENTILE_DISC),), '(', $.expression, ')', WITHIN, GROUP, '(', $.order_by_clause, ')', OVER, '(', optional(
-        seq(PARTITION, BY, $.expression_list_)
-        ), ')'),
-    ),
-
-    all_distinct_expression: $ => (
-            seq(optional(choice(seq(ALL, DISTINCT),)), $.expression),
-    ),
-
-    // https://msdn.microsoft.com/en-us/library/ms189461.aspx
-    over_clause: $ => (
-            seq(OVER, '(', optional(seq(PARTITION, BY, $.expression_list_),), optional($.order_by_clause), optional($.row_or_range_clause), ')'),
-    ),
-
-    row_or_range_clause: $ => (
-            seq(choice(seq(ROWS, RANGE),), $.window_frame_extent),
-    ),
-
-    window_frame_extent: $ => choice(
-        $.window_frame_preceding,
-        seq(BETWEEN, $.window_frame_bound, AND, $.window_frame_bound),
-    ),
-
-    window_frame_bound: $ => choice(
-        $.window_frame_preceding,
-        $.window_frame_followin,
-    ),
-
-    window_frame_preceding: $ => choice(
-            seq(UNBOUNDED, PRECEDING),
-        seq(DECIMAL, PRECEDING),
-        seq(CURRENT, ROW),
-    ),
-
-    window_frame_following: $ => choice(
-            seq(UNBOUNDED, FOLLOWING),
-        seq(DECIMAL, FOLLOWING),
-    ),
-
-    create_database_option: $ => choice(
-            seq(FILESTREAM, (seq($.database_filestream_option, repeat(seq(',', $.database_filestream_option),)))),
-        seq(DEFAULT_LANGUAGE, EQUAL, (#######,)),
-        seq(DEFAULT_FULLTEXT_LANGUAGE, EQUAL, (#######,)),
-        seq(NESTED_TRIGGERS, EQUAL, (#######,)),
-        seq(TRANSFORM_NOISE_WORDS, EQUAL, (#######,)),
-        seq(TWO_DIGIT_YEAR_CUTOFF, EQUAL, DECIMAL),
-        seq(DB_CHAINING, (#######,)),
-        seq(TRUSTWORTHY, (#######,)),
-    ),
-
-    database_filestream_option: $ => (
-            seq(LR_BRACKET, choice(
-        seq((, NON_TRANSACTED_ACCESS, EQUAL, (, OFF, READ_ONLY, FULL))),
-            #######
-        ), RR_BRACKET),
-    ),
-
-    database_file_spec: $ => choice(
-        $.file_group,
-        $.file_spe,
-    ),
-
-    file_group: $ => (
-            seq(FILEGROUP, $.id_, optional(seq(CONTAINS, FILESTREAM),), optional(DEFAUL,), optional(seq(CONTAINS, MEMORY_OPTIMIZED_DATA),), $.file_spec, repeat(
-        seq(',', $.file_spec)
-        ),),
-    ),
-
-    file_spec: $ => (
-            seq(LR_BRACKET, NAME, EQUAL, choice(seq($.id_, STRING),), optional(','), FILENAME, EQUAL, field("file", STRING), optional(','), optional(
-        seq(SIZE, EQUAL, $.file_size, optional(','))
-        ), optional(seq(MAXSIZE, EQUAL, choice(seq($.file_size, UNLIMITED),), optional(','))), optional(seq(FILEGROWTH, EQUAL, $.file_size, optional(',')),), RR_BRACKET),
-    ),
-
-    // Primitive.
-    entity_name: $ => (
-            seq(optional(choice(
-        seq(field("server", $.id_), '.', field("database", $.id_), '.', field("schema", $.id_), '.'),
-        seq(field("database", $.id_), '.', optional(seq(field("schema", $.id_))), '.'),
-        seq(field("schema", $.id_), '.')
-        ),), field("table", $.id_)),
-    ),
-
-    entity_name_for_azure_dw: $ => choice(
-            seq(field("schema", $.id_)),
-        seq(field("schema", $.id_), '.', field("object_name", $.id_)),
-    ),
-
-    entity_name_for_parallel_dw: $ => choice(
-            seq(field("schema_database", $.id_)),
-        seq(field("schema", $.id_), '.', field("object_name", $.id_)),
-    ),
-
-    full_table_name: $ => (
-            seq(optional(choice(
-        seq(field("linkedServer", $.id_), '.', '.', field("schema", $.id_), '.'),
-        seq(field("server", $.id_), '.', field("database", $.id_), '.', field("schema", $.id_), '.'),
-        seq(field("database", $.id_), '.', field("schema", optional($.id_)), '.'),
-        seq(field("schema", $.id_), '.')
-        ),), field("table", $.id_)),
-    ),
-
-    table_name: $ => (
-            seq(optional(choice(seq(field("database", $.id_), '.', field("schema", optional($.id_)), '.', field("schema", $.id_), '.'),)), choice(
-        seq(field("table", $.id_)),
-        seq(field("blocking_hierarchy", BLOCKING_HIERARCHY))
-        ),),
-    ),
-
-    simple_name: $ => (
-            seq(optional(seq(field("schema", $.id_), '.'),), field("name", $.id_)),
-    ),
-
-    func_proc_name_schema: $ => (
-            seq(optional(seq((seq(field("schema", $.id_))), '.'),), field("procedure", $.id_)),
-    ),
-
-    func_proc_name_database_schema: $ => choice(
-            seq(field("database", optional($.id_)), '.', field("schema", optional($.id_)), '.', field("procedure", $.id_)),
-        $.func_proc_name_schem,
-    ),
-
-    func_proc_name_server_database_schema: $ => choice(
-            seq(field("server", optional($.id_)), '.', field("database", optional($.id_)), '.', field("schema", optional($.id_)), '.', field("procedure", $.id_)),
-        $.func_proc_name_database_schem,
-    ),
-
-    ddl_object: $ => choice(
-        $.full_table_name,
-        LOCAL_I,
-    ),
-
-    full_column_name: $ => (
-            seq(optional(seq(choice(seq(DELETED, INSERTED, $.full_table_name),), '.'),), choice(
-        seq(field("column_name", $.id_)),
-            #######
-        ),),
-    ),
-
-    column_name_list_with_order: $ => (
-            seq($.id_, (ASC, |, DESC)?, repeat(seq(',', $.id_, optional(choice(seq(ASC, DESC),))))),
-    ),
-
-    //For some reason, sql server allows any number of prefixes:  Here, h is the column: a.b.c.d.e.f.g.h
-    insert_column_name_list: $ => (
-            seq($.col, +=, insert_$.column_id, repeat(seq(',', $.col, +=, insert_$.column_id),)),
-    ),
-
-    insert_column_id: $ => (
-            seq(repeat(seq($.ignore, +=, optional($.id_), '.'),), $.id_),
-    ),
-
-    column_name_list: $ => (
-            seq($.col, +=, $.id_, repeat(seq(',', $.col, +=, $.id_),)),
-    ),
-
-    cursor_name: $ => choice(
-        $.id_,
-        LOCAL_I,
-    ),
-
-    on_off: $ => choice(
-        ON,
-        OF,
-    ),
-
-    clustered: $ => choice(
-        CLUSTERED,
-        NONCLUSTERE,
-    ),
-
-    null_notnull: $ => (
-            seq(NOT?, NULL$._),
-    ),
-
-    scalar_function_name: $ => choice(
-        $.func_proc_name_server_database_schema,
-        RIGHT,
-        LEFT,
-        BINARY_CHECKSUM,
-        CHECKSU,
-    ),
-
-    begin_conversation_timer: $ => (
-            seq(BEGIN, CONVERSATION, TIMER, '(', LOCAL_ID, ')', TIMEOUT, '=', $.time, optional(';')),
-    ),
-
-    begin_conversation_dialog: $ => (
-            seq(BEGIN, DIALOG, optional(CONVERSATIO,), field("dialog_handle", LOCAL_ID), FROM, SERVICE, field("initiator_service_name", $.service_name), TO, SERVICE, $.target_service_name, =),
-        seq($.service_name, optional(seq(',', field("service_broker_guid", STRING))), ON, CONTRACT, $.contract_name, optional(choice(
-        seq(WITH, ((RELATED_CONVERSATION, RELATED_CONVERSATION_GROUP), '=', LOCAL_ID, optional(','))?, (),
+      ),))
+    ),)),
+  ),
+
+  // https://docs.microsoft.com/en-us/sql/t-sql/queries/select-for-clause-transact-sql
+  for_clause: $ => choice(
+    seq(FOR, BROWSE),
+    seq(FOR, XML, (RAW, optional(seq('(', STRING, ')'),), |, AUTO), repeat($.xml_common_directives), (),
+      seq(COMMA, (XMLDATA, |, XMLSCHEMA, optional(seq('(', STRING, ')'),))),
+      seq()?, optional(seq(COMMA, ELEMENTS, optional(choice(seq(XSINIL, ABSENT),))))),
+    seq(FOR, XML, EXPLICIT, repeat($.xml_common_directives), optional(seq(COMMA, XMLDATA),)),
+    seq(FOR, XML, PATH, optional(seq('(', STRING, ')'),), repeat($.xml_common_directives), optional(seq(COMMA, ELEMENTS, optional(choice(seq(XSINIL, ABSENT),))))),
+    seq(FOR, JSON, choice(seq(AUTO, PATH),), repeat(
+      seq(COMMA, choice(seq(ROOT, (seq('(', STRING, ')'),), INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER),))
+    ),),
+  ),
+
+  xml_common_directives: $ => (
+    seq(',', choice(seq(BINARY_KEYWORD, BASE64, TYPE, ROOT, optional(seq('(', STRING, ')'),)))),
+  ),
+
+  order_by_expression: $ => (
+    seq(field("order_by", $.expression), optional(choice(seq(field("ascending", ASC), field("descending", DESC))))),
+  ),
+
+  // https://docs.microsoft.com/en-us/sql/t-sql/queries/select-group-by-transact-optional($.sql)view=sql-server-ver15
+  grouping_sets_item: $ => choice(
+    seq(optional('('), groupSetI$.tems, +=, $.group_by_item, repeat(seq(',', groupSetI$.tems, +=, $.group_by_item),), optional(')')),
+    seq('(', ')'),
+  ),
+
+  group_by_item: $ => (
+    $.expressio,
+    seq(/*|, $.rollup_spec),
+    $.cube_spec,
+    $.grouping_sets_spec,
+    repeat($.grand_total),
+  ),
+
+  option_clause
+  // https://msdn.microsoft.com/en-us/library/ms181714.aspx: $ => (
+    seq(OPTION, '(', $.$.options_, +=, $.option, repeat(seq(',', $.$.options_, +=, $.option),), ')'),
+  ),
+
+  option: $ => choice(
+    seq(FAST, field("number_rows", DECIMAL)),
+    seq(choice(seq(HASH, ORDER),), GROUP),
+    seq(choice(seq(MERGE, HASH, CONCAT),), UNION),
+    seq(choice(seq(LOOP, MERGE, HASH),), JOIN),
+    seq(EXPAND, VIEWS),
+    seq(FORCE, ORDER),
+    IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX,
+    seq(KEEP, PLAN),
+    seq(KEEPFIXED, PLAN),
+    seq(MAXDOP, field("number_of_processors", DECIMAL)),
+    seq(MAXRECURSION, field("number_recursion", DECIMAL)),
+    seq(OPTIMIZE, FOR, '(', $.optimize_for_arg, repeat(seq(',', $.optimize_for_arg),), ')'),
+    seq(OPTIMIZE, FOR, UNKNOWN),
+    seq(PARAMETERIZATION, choice(seq(SIMPLE, FORCED),)),
+    RECOMPILE,
+    seq(ROBUST, PLAN),
+    seq(USE, PLAN, STRING),
+  ),
+
+  optimize_for_arg: $ => (
+    seq(LOCAL_ID, choice(seq(UNKNOWN, '=', choice(seq($.constant, NULL$._),)))),
+  ),
+
+  // https://msdn.microsoft.com/en-us/library/ms176104.aspx
+  select_list: $ => (
+    seq($.selectE$.lement, +=, $.select_list_elem, repeat(seq(',', selectE$.lement, +=, $.select_list_elem),)),
+  ),
+
+  udt_method_arguments: $ => (
+    seq('(', $.argument, +=, $.execute_var_string, repeat(seq(',', $.argument, +=, $.execute_var_string),), ')'),
+  ),
+
+  // https://docs.microsoft.com/ru-ru/sql/t-sql/queries/select-clause-transact-sql
+  asterisk: $ => choice(
+    seq(optional(seq($.table_name, '.'),), '*'),
+    seq(choice(seq(INSERTED, DELETED),), '.repeat(', ')'),
+  ),
+
+  udt_elem: $ => choice(
+    seq(field("udt_column_name", $.id_), '.', field("non_static_attr", $.id_), $.udt_method_arguments, optional($.as_column_alias)),
+    seq(field("udt_column_name", $.id_), DOUBLE_COLON, field("static_attr", $.id_), optional($.udt_method_arguments), optional($.as_column_alias)),
+  ),
+
+  expression_elem: $ => choice(
+    seq(field("leftAlias", $.column_alias), $.eq, =, '=', field("leftAssignment", $.expression)),
+    seq(field("expressionAs", $.expression), optional($.as_column_alias)),
+  ),
+
+  select_list_elem: $ => choice(
+    $.asterisk,
+    $.udt_elem,
+    seq(LOCAL_ID, choice(seq($.assignment_operator, '='),), $.expression),
+    $.expression_ele,
+  ),
+
+  table_sources: $ => choice(
+    $.non_ansi_join,
+    seq($.source, +=, table_$.source, repeat(seq(',', $.source, +=, table_$.source),)),
+  ),
+
+  // sqlenlight.com/support/help/sa0006/
+  // stale link
+  non_ansi_join: $ => (
+    seq($.source, +=, table_$.source, repeat1(seq(',', $.source, +=, table_$.source),)),
+  ),
+
+  // https://docs.microsoft.com/en-us/sql/t-sql/queries/from-transact-sql
+  table_source: $ => (
+    seq($.table_source_item, $.joins, +=, repeat($.join_part)),
+  ),
+
+  table_source_item: $ => choice(
+    seq($.full_table_name, $.deprecated_table_hint, $.as_table_alias),
+    seq($.full_table_name, optional($.as_table_alias), optional(choice(
+      $.with_table_hints,
+      $.deprecated_table_hint,
+      $.sybase_legacy_hint
+    ),)),
+    seq($.rowset_function, optional($.as_table_alias)),
+    seq('(', $.derived_table, ')', (#######,)),
+    seq($.change_table, optional($.as_table_alias)),
+    seq($.nodes_method, (#######,)),
+    seq($.function_call, (#######,)),
+    seq(field("loc_id", LOCAL_ID), optional($.as_table_alias)),
+    seq(field("loc_id_call", LOCAL_ID), '.', field("loc_fcall", $.function_call), (#######,)),
+    $.open_xml,
+    $.open_json,
+    seq(DOUBLE_COLON, field("oldstyle_fcall", $.function_call), optional($.as_table_alias)),
+    seq('(', $.table_source, ')'),
+  ),
+
+  // https://docs.microsoft.com/en-us/sql/t-sql/functions/openxml-transact-sql
+  open_xml: $ => (
+    seq(OPENXML, '(', $.expression, ',', $.expression, optional(seq(',', $.expression),), ')', optional(seq(WITH, '(', $.schema_declaration, ')'),), optional($.as_table_alias)),
+  ),
+
+  open_json: $ => (
+    seq(OPENJSON, '(', $.expression, optional(seq(',', $.expression),), ')', optional(seq(WITH, '(', $.json_declaration, ')'),), optional($.as_table_alias)),
+  ),
+
+  json_declaration: $ => (
+    seq($.json_col, +=, $.$.json_column_declaration, repeat(seq(',', $.json_col, +=, $.$.json_column_declaration),)),
+  ),
+
+  json_column_declaration: $ => (
+    seq($.column_declaration, optional(seq(AS, JSON),)),
+  ),
+
+  schema_declaration: $ => (
+    seq($.xml_col, +=, $.column_declaration, repeat(seq(',', $.xml_col, +=, $.column_declaration),)),
+  ),
+
+  column_declaration: $ => (
+    seq($.id_, $.data_type, STRING?),
+  ),
+
+  change_table: $ => choice(
+    $.change_table_changes,
+    $.change_table_versio,
+  ),
+
+  change_table_changes: $ => (
+    seq(CHANGETABLE, '(', CHANGES, field("changetable", $.table_name), ',', $.changesid, =, choice(seq(NULL$._, DECIMAL, LOCAL$._ID),), ')'),
+  ),
+
+  change_table_version: $ => (
+    seq(CHANGETABLE, '(', VERSION, field("versiontable", $.table_name), ',', field("pk_columns", $.full_column_name_list), ',', field("pk_values", $.select_list), ')'),
+  ),
+
+  // https://msdn.microsoft.com/en-us/library/ms191472.aspx
+  join_part
+  // https://msdn.microsoft.com/en-us/library/ms173815(v=sql.120).aspx: $ => choice(
+    $.join_on,
+    $.cross_join,
+    $.apply_,
+    $.pivot,
+    $.unpivo,
+  ),
+
+  join_on: $ => (
+    seq(choice(seq(field("inner", INNER?), $.join_type, =, choice(seq(LEFT, RIGHT, FULL),), field("outer", OUTER?))), optional(
+      seq($.join_hint, =, choice(seq(LOOP, HASH, MERGE, REMOTE),))
+    ), JOIN, field("source", $.table_source), ON, field("cond", $.search_condition)),
+  ),
+
+  cross_join: $ => (
+    seq(CROSS, JOIN, $.table_source_item),
+  ),
+
+  apply_: $ => (
+    seq($.apply_style, =, choice(seq(CROSS, OUTER),), APPLY, field("source", $.table_source_item)),
+  ),
+
+  pivot: $ => (
+    seq(PIVOT, $.pivot_clause, $.as_table_alias),
+  ),
+
+  unpivot: $ => (
+    seq(UNPIVOT, $.unpivot_clause, $.as_table_alias),
+  ),
+
+  pivot_clause: $ => (
+    seq('(', $.aggregate_windowed_function, FOR, $.full_column_name, IN, $.column_alias_list, ')'),
+  ),
+
+  unpivot_clause: $ => (
+    seq('(', field("unpivot_exp", $.expression), FOR, $.full_column_name, IN, '(', $.$.full_column_name_list, ')', ')'),
+  ),
+
+  full_column_name_list: $ => (
+    seq($.column, +=, $.full_$.column_name, repeat(seq(',', $.column, +=, $.full_$.column_name),)),
+  ),
+
+  // https://msdn.microsoft.com/en-us/library/ms190312.aspx
+  rowset_function: $ => (
+    (
+      seq(OPENROWSET, LR_BRACKET, field("provider_name", STRING), COMMA, field("connectionString", STRING), COMMA, field("sql", STRING), RR_BRACKET)
+    ),
+    ########,
+  ),
+
+  // runtime check.
+  bulk_option: $ => (
+    seq($.id_, '=', $.bulk_option_value, =, choice(seq(DECIMAL, STRING),)),
+  ),
+
+  derived_table: $ => choice(
+    $.subquery,
+    seq('(', $.subquery, repeat(seq(UNION, ALL, $.subquery),), ')'),
+    $.table_value_constructor,
+    seq('(', $.table_value_constructor, ')'),
+  ),
+
+  function_call: $ => choice(
+    seq($.ranking_windowed_function, #, RANKING_WINDOWED_FUNC),
+    seq($.aggregate_windowed_function, #, AGGREGATE_WINDOWED_FUNC),
+    seq($.analytic_windowed_function, #, ANALYTIC_WINDOWED_FUNC),
+    seq($.built_in_functions, #, BUILT_IN_FUNC),
+    seq($.scalar_function_name, '(', optional($.expression_list_), ')', #, SCALAR_FUNCTION),
+    seq($.freetext_function, #, FREE_TEXT),
+    seq($.partition_function, #, PARTITION_FUNC),
+    seq($.hierarchyid_static_method, #, HIERARCHYID_METHOD),
+  ),
+
+  partition_function: $ => (
+    seq(optional(seq(field("database", $.id_), '.'),), DOLLAR_PARTITION, '.', field("func_name", $.id_), '(', $.expression, ')'),
+  ),
+
+  freetext_function: $ => (
+    seq(choice(seq(CONTAINSTABLE, FREETEXTTABLE),), '(', $.table_name, ',', choice(
+      $.full_column_name,
+      seq('(', $.full_column_name, repeat(seq(',', $.full_column_name),), ')'),
+      '*
+    ), ',', $.expression, optional(seq(',', LANGUAGE, $.expression),), optional(seq(',', $.expression),), ')'),
+    seq(choice(seq(SEMANTICSIMILARITYTABLE, SEMANTICKEYPHRASETABLE),), '(', $.table_name, ',', choice(
+      $.full_column_name,
+      seq('(', $.full_column_name, repeat(seq(',', $.full_column_name),), ')'),
+      '*
+    ), ',', $.expression, ')'),
+    seq(SEMANTICSIMILARITYDETAILSTABLE, '(', $.table_name, ',', $.full_column_name, ',', $.expression, ',', $.full_column_name, ',', $.expression, ')'),
+  ),
+
+  freetext_predicate: $ => (
+    seq(CONTAINS, '(', choice(
+      $.full_column_name,
+      seq('(', $.full_column_name, repeat(seq(',', $.full_column_name),), ')'),
+      '*',
+      seq(PROPERTY, '(', $.full_column_name, ',', $.expression, ')')
+    ), ',', $.expression, ')'),
+    seq(FREETEXT, '(', $.table_name, ',', choice(
+      $.full_column_name,
+      seq('(', $.full_column_name, repeat(seq(',', $.full_column_name),), ')'),
+      '*
+    ), ',', $.expression, optional(seq(',', LANGUAGE, $.expression),), ')'),
+  ),
+
+  json_key_value: $ => (
+    seq(field("json_key_name", $.expression), ':', field("value_expression", $.expression)),
+  ),
+
+  json_null_clause: $ => (
+    seq(choice(seq(ABSENT, NULL$._),), ON, NULL$._),
+  ),
+
+  xml_data_type_methods: $ => choice(
+    $.value_method,
+    $.query_method,
+    $.exist_method,
+    $.modify_metho,
+  ),
+
+  // https://learn.microsoft.com/en-us/sql/t-sql/functions/date-bucket-transact-optional($.sql)view=sql-server-ver16
+  dateparts_9: $ => choice(
+    YEAR,
+    YEAR_ABBR,
+    QUARTER,
+    QUARTER_ABBR,
+    MONTH,
+    MONTH_ABBR,
+    DAY,
+    DAY_ABBR,
+    WEEK,
+    WEEK_ABBR,
+    HOUR,
+    HOUR_ABBR,
+    MINUTE,
+    MINUTE_ABBR,
+    SECOND,
+    SECOND_ABBR,
+    MILLISECOND,
+    MILLISECOND_ABB,
+  ),
+
+  // https://learn.microsoft.com/en-us/sql/t-sql/functions/dateadd-transact-optional($.sql)view=sql-server-ver16
+  dateparts_12: $ => choice(
+    $.dateparts_9,
+    DAYOFYEAR,
+    DAYOFYEAR_ABBR,
+    MICROSECOND,
+    MICROSECOND_ABBR,
+    NANOSECOND,
+    NANOSECOND_ABB,
+  ),
+
+  // https://learn.microsoft.com/en-us/sql/t-sql/functions/datename-transact-optional($.sql)view=sql-server-ver16
+  dateparts_15: $ => choice(
+    $.dateparts_12,
+    WEEKDAY,
+    WEEKDAY_ABBR,
+    TZOFFSET,
+    TZOFFSET_ABBR,
+    ISO_WEEK,
+    ISO_WEEK_ABB,
+  ),
+
+  // https://learn.microsoft.com/en-us/sql/t-sql/functions/datetrunc-transact-optional($.sql)view=sql-server-ver16
+  dateparts_datetrunc: $ => choice(
+    $.dateparts_9,
+    DAYOFYEAR,
+    DAYOFYEAR_ABBR,
+    MICROSECOND,
+    MICROSECOND_ABBR,
+    ISO_WEEK,
+    ISO_WEEK_ABB,
+  ),
+
+  value_method: $ => (
+    seq(choice(
+      seq(field("loc_id", LOCAL_ID)),
+      seq(field("value_id", $.full_column_name)),
+      seq(field("eventdata", EVENTDATA), '(', ')'),
+      seq(field("query", $.query_method)),
+      seq('(', $.subquery, ')')
+    ), '.', field("call", $.value_call)),
+  ),
+
+  value_call: $ => (
+    seq(choice(seq(VALUE, VALUE_SQUARE_BRACKET),), '(', field("xquery", STRING), ',', field("sqltype", STRING), ')'),
+  ),
+
+  query_method: $ => (
+    seq(choice(seq(field("loc_id", LOCAL_ID), field("value_id", $.full_column_name), '(', $.subquery, ')'),), '.', field("call", $.query_call)),
+  ),
+
+  query_call: $ => (
+    seq(choice(seq(QUERY, QUERY_SQUARE_BRACKET),), '(', field("xquery", STRING), ')'),
+  ),
+
+  exist_method: $ => (
+    seq(choice(seq(field("loc_id", LOCAL_ID), field("value_id", $.full_column_name), '(', $.subquery, ')'),), '.', field("call", $.exist_call)),
+  ),
+
+  exist_call: $ => (
+    seq(choice(seq(EXIST, EXIST_SQUARE_BRACKET),), '(', field("xquery", STRING), ')'),
+  ),
+
+  modify_method: $ => (
+    seq(choice(seq(field("loc_id", LOCAL_ID), field("value_id", $.full_column_name), '(', $.subquery, ')'),), '.', field("call", $.modify_call)),
+  ),
+
+  modify_call: $ => (
+    seq(choice(seq(MODIFY, MODIFY_SQUARE_BRACKET),), '(', field("xml_dml", STRING), ')'),
+  ),
+
+  hierarchyid_call: $ => choice(
+    seq(GETANCESTOR, '(', field("n", $.expression), ')'),
+    seq(GETDESCENDANT, '(', child1, =, $.expression, ',', child2, =, $.expression, ')'),
+    seq(GETLEVEL, '(', ')'),
+    seq(ISDESCENDANTOF, '(', field("parent_", $.expression), ')'),
+    seq(GETREPARENTEDVALUE, '(', field("oldroot", $.expression), ',', field("newroot", $.expression), ')'),
+    seq(TOSTRING, '(', ')'),
+  ),
+
+  hierarchyid_static_method: $ => (
+    seq(HIERARCHYID, DOUBLE_COLON, choice(seq(GETROOT, '(', ')', PARSE, '(', field("input", $.expression), ')'),)),
+  ),
+
+  nodes_method: $ => (
+    seq(choice(seq(field("loc_id", LOCAL_ID), field("value_id", $.full_column_name), '(', $.subquery, ')'),), '.', NODES, '(', field("xquery", STRING), ')'),
+  ),
+
+  switch_section: $ => (
+    seq(WHEN, $.expression, THEN, $.expression),
+  ),
+
+  switch_search_condition_section: $ => (
+    seq(WHEN, $.search_condition, THEN, $.expression),
+  ),
+
+  as_column_alias: $ => (
+    seq(AS?, $.column_alias),
+  ),
+
+  as_table_alias: $ => (
+    seq(AS?, $.table_alias),
+  ),
+
+  table_alias: $ => (
+    $.id,
+  ),
+
+  // https://msdn.microsoft.com/en-us/library/ms187373.aspx
+  with_table_hints: $ => (
+    seq(WITH, '(', $.hint, +=, $.table_$.hint, repeat(seq(optional(','), $.hint, +=, $.table_$.hint),), ')'),
+  ),
+
+  deprecated_table_hint: $ => (
+    seq('(', $.table_hint, ')'),
+  ),
+
+  // https://infocenter-archive.sybase.com/help/index.optional($.jsp)topic=/com.sybase.infocenter.dc00938.1502/html/locking/locking103.htm
+  // https://infocenter-archive.sybase.com/help/index.optional($.jsp)topic=/com.sybase.dc32300_1250/html/sqlug/sqlug792.htm
+  // https://infocenter-archive.sybase.com/help/index.optional($.jsp)topic=/com.sybase.dc36271_36272_36273_36274_1250/html/refman/X35229.htm
+  // Legacy hint with no parenthesis and no WITH keyword. Actually conflicts with table alias name except for holdlock which is
+  // a reserved keyword in this grammar. We might want a separate sybase grammar variant.
+  sybase_legacy_hints: $ => (
+    $.sybase_legacy_hint,
+  ),
+
+  sybase_legacy_hint: $ => choice(
+    HOLDLOCK,
+    NOHOLDLOCK,
+    READPAST,
+    SHARE,
+  ),
+
+  // For simplicity, we don't build subsets for INSERT/UPDATE/DELETE/SELECT/MERGE
+  // which means the grammar accept slightly more than the what the specification (documentation) says.
+  table_hint: $ => choice(
+    NOEXPAND,
+    seq(INDEX, choice(
+      seq('(', $.index_value, repeat(seq(',', $.index_value),), ')'),
+      seq('=', '(', $.index_value, ')'),
+      seq('=', $.$.index_value, //, $.examples, $.in, $.the, $.doc, $.$.include, $.this, $.syntax)
+    ),),
+    seq(FORCESEEK, optional(seq('(', $.index_value, '(', $.column_name_list, ')', ')'),)),
+    FORCESCAN,
+    HOLDLOCK,
+    NOLOCK,
+    NOWAIT,
+    PAGLOCK,
+    READCOMMITTED,
+    READCOMMITTEDLOCK,
+    READPAST,
+    READUNCOMMITTED,
+    REPEATABLEREAD,
+    ROWLOCK,
+    SERIALIZABLE,
+    SNAPSHOT,
+    seq(SPATIAL_WINDOW_MAX_CELLS, '=', DECIMAL),
+    TABLOCK,
+    TABLOCKX,
+    UPDLOCK,
+    XLOCK,
+    KEEPIDENTITY,
+    KEEPDEFAULTS,
+    IGNORE_CONSTRAINTS,
+    IGNORE_TRIGGER,
+  ),
+
+  index_value: $ => choice(
+    $.id_,
+    DECIMA,
+  ),
+
+  column_alias_list: $ => (
+    seq('(', $.alias, +=, $.column_$.alias, repeat(seq(',', $.alias, +=, $.column_$.alias),), ')'),
+  ),
+
+  column_alias: $ => choice(
+    $.id_,
+    STRIN,
+  ),
+
+  table_value_constructor: $ => (
+    seq(VALUES, '(', $.exps, +=, $.expression_list_, ')', repeat(seq(',', '(', $.exps, +=, $.expression_list_, ')'),)),
+  ),
+
+  expression_list_: $ => (
+    seq($.exp, +=, $.$.expression, repeat(seq(',', $.exp, +=, $.$.expression),)),
+  ),
+
+  // https://msdn.microsoft.com/en-us/library/ms189798.aspx
+  ranking_windowed_function: $ => choice(
+    seq(choice(seq(RANK, DENSE_RANK, ROW_NUMBER),), '(', ')', $.over_clause),
+    seq(NTILE, '(', $.expression, ')', $.over_clause),
+  ),
+
+  // https://msdn.microsoft.com/en-us/library/ms173454.aspx
+  aggregate_windowed_function: $ => choice(
+    seq($.agg_func, =, choice(seq(AVG, MAX, MIN, SUM, STDEV, STDEVP, VAR, VARP),), '(', $.all_distinct_expression, ')', optional($.over_clause)),
+    seq($.cnt, =, choice(seq(COUNT, COUNT_BIG),), '(', choice(seq('*', $.all_distinct_expression),), ')', optional($.over_clause)),
+    seq(CHECKSUM_AGG, '(', $.all_distinct_expression, ')'),
+    seq(GROUPING, '(', $.expression, ')'),
+    seq(GROUPING_ID, '(', $.expression_list_, ')'),
+  ),
+
+  // https://docs.microsoft.com/en-us/sql/t-sql/functions/analytic-functions-transact-sql
+  analytic_windowed_function: $ => choice(
+    seq(choice(seq(FIRST_VALUE, LAST_VALUE),), '(', $.expression, ')', $.over_clause),
+    seq(choice(seq(LAG, LEAD),), '(', $.expression, optional(seq(',', $.expression, optional(seq(',', $.expression),))), ')', $.over_clause),
+    seq(choice(seq(CUME_DIST, PERCENT_RANK),), '(', ')', OVER, '(', optional(seq(PARTITION, BY, $.expression_list_),), $.order_by_clause, ')'),
+    seq(choice(seq(PERCENTILE_CONT, PERCENTILE_DISC),), '(', $.expression, ')', WITHIN, GROUP, '(', $.order_by_clause, ')', OVER, '(', optional(
+      seq(PARTITION, BY, $.expression_list_)
+    ), ')'),
+  ),
+
+  all_distinct_expression: $ => (
+    seq(optional(choice(seq(ALL, DISTINCT),)), $.expression),
+  ),
+
+  // https://msdn.microsoft.com/en-us/library/ms189461.aspx
+  over_clause: $ => (
+    seq(OVER, '(', optional(seq(PARTITION, BY, $.expression_list_),), optional($.order_by_clause), optional($.row_or_range_clause), ')'),
+  ),
+
+  row_or_range_clause: $ => (
+    seq(choice(seq(ROWS, RANGE),), $.window_frame_extent),
+  ),
+
+  window_frame_extent: $ => choice(
+    $.window_frame_preceding,
+    seq(BETWEEN, $.window_frame_bound, AND, $.window_frame_bound),
+  ),
+
+  window_frame_bound: $ => choice(
+    $.window_frame_preceding,
+    $.window_frame_followin,
+  ),
+
+  window_frame_preceding: $ => choice(
+    seq(UNBOUNDED, PRECEDING),
+    seq(DECIMAL, PRECEDING),
+    seq(CURRENT, ROW),
+  ),
+
+  window_frame_following: $ => choice(
+    seq(UNBOUNDED, FOLLOWING),
+    seq(DECIMAL, FOLLOWING),
+  ),
+
+  create_database_option: $ => choice(
+    seq(FILESTREAM, (seq($.database_filestream_option, repeat(seq(',', $.database_filestream_option),)))),
+    seq(DEFAULT_LANGUAGE, EQUAL, (#######,)),
+    seq(DEFAULT_FULLTEXT_LANGUAGE, EQUAL, (#######,)),
+    seq(NESTED_TRIGGERS, EQUAL, (#######,)),
+    seq(TRANSFORM_NOISE_WORDS, EQUAL, (#######,)),
+    seq(TWO_DIGIT_YEAR_CUTOFF, EQUAL, DECIMAL),
+    seq(DB_CHAINING, (#######,)),
+    seq(TRUSTWORTHY, (#######,)),
+  ),
+
+  database_filestream_option: $ => (
+    seq(LR_BRACKET, choice(
+      seq((, NON_TRANSACTED_ACCESS, EQUAL, (, OFF, READ_ONLY, FULL))),
+      #######
+    ), RR_BRACKET),
+  ),
+
+  database_file_spec: $ => choice(
+    $.file_group,
+    $.file_spe,
+  ),
+
+  file_group: $ => (
+    seq(FILEGROUP, $.id_, optional(seq(CONTAINS, FILESTREAM),), optional(DEFAUL,), optional(seq(CONTAINS, MEMORY_OPTIMIZED_DATA),), $.file_spec, repeat(
+      seq(',', $.file_spec)
+    ),),
+  ),
+
+  file_spec: $ => (
+    seq(LR_BRACKET, NAME, EQUAL, choice(seq($.id_, STRING),), optional(','), FILENAME, EQUAL, field("file", STRING), optional(','), optional(
+      seq(SIZE, EQUAL, $.file_size, optional(','))
+    ), optional(seq(MAXSIZE, EQUAL, choice(seq($.file_size, UNLIMITED),), optional(','))), optional(seq(FILEGROWTH, EQUAL, $.file_size, optional(',')),), RR_BRACKET),
+  ),
+
+  // Primitive.
+  entity_name: $ => (
+    seq(optional(choice(
+      seq(field("server", $.id_), '.', field("database", $.id_), '.', field("schema", $.id_), '.'),
+      seq(field("database", $.id_), '.', optional(seq(field("schema", $.id_))), '.'),
+      seq(field("schema", $.id_), '.')
+    ),), field("table", $.id_)),
+  ),
+
+  entity_name_for_azure_dw: $ => choice(
+    seq(field("schema", $.id_)),
+    seq(field("schema", $.id_), '.', field("object_name", $.id_)),
+  ),
+
+  entity_name_for_parallel_dw: $ => choice(
+    seq(field("schema_database", $.id_)),
+    seq(field("schema", $.id_), '.', field("object_name", $.id_)),
+  ),
+
+  full_table_name: $ => (
+    seq(optional(choice(
+      seq(field("linkedServer", $.id_), '.', '.', field("schema", $.id_), '.'),
+      seq(field("server", $.id_), '.', field("database", $.id_), '.', field("schema", $.id_), '.'),
+      seq(field("database", $.id_), '.', field("schema", optional($.id_)), '.'),
+      seq(field("schema", $.id_), '.')
+    ),), field("table", $.id_)),
+  ),
+
+  table_name: $ => (
+    seq(optional(choice(seq(field("database", $.id_), '.', field("schema", optional($.id_)), '.', field("schema", $.id_), '.'),)), choice(
+      seq(field("table", $.id_)),
+      seq(field("blocking_hierarchy", BLOCKING_HIERARCHY))
+    ),),
+  ),
+
+  simple_name: $ => (
+    seq(optional(seq(field("schema", $.id_), '.'),), field("name", $.id_)),
+  ),
+
+  func_proc_name_schema: $ => (
+    seq(optional(seq((seq(field("schema", $.id_))), '.'),), field("procedure", $.id_)),
+  ),
+
+  func_proc_name_database_schema: $ => choice(
+    seq(field("database", optional($.id_)), '.', field("schema", optional($.id_)), '.', field("procedure", $.id_)),
+    $.func_proc_name_schem,
+  ),
+
+  func_proc_name_server_database_schema: $ => choice(
+    seq(field("server", optional($.id_)), '.', field("database", optional($.id_)), '.', field("schema", optional($.id_)), '.', field("procedure", $.id_)),
+    $.func_proc_name_database_schem,
+  ),
+
+  ddl_object: $ => choice(
+    $.full_table_name,
+    LOCAL_I,
+  ),
+
+  full_column_name: $ => (
+    seq(optional(seq(choice(seq(DELETED, INSERTED, $.full_table_name),), '.'),), choice(
+      seq(field("column_name", $.id_)),
+      #######
+    ),),
+  ),
+
+  column_name_list_with_order: $ => (
+    seq($.id_, (ASC, |, DESC)?, repeat(seq(',', $.id_, optional(choice(seq(ASC, DESC),))))),
+  ),
+
+  //For some reason, sql server allows any number of prefixes:  Here, h is the column: a.b.c.d.e.f.g.h
+  insert_column_name_list: $ => (
+    seq($.col, +=, insert_$.column_id, repeat(seq(',', $.col, +=, insert_$.column_id),)),
+  ),
+
+  insert_column_id: $ => (
+    seq(repeat(seq($.ignore, +=, optional($.id_), '.'),), $.id_),
+  ),
+
+  column_name_list: $ => (
+    seq($.col, +=, $.id_, repeat(seq(',', $.col, +=, $.id_),)),
+  ),
+
+  cursor_name: $ => choice(
+    $.id_,
+    LOCAL_I,
+  ),
+
+  on_off: $ => choice(
+    ON,
+    OF,
+  ),
+
+  clustered: $ => choice(
+    CLUSTERED,
+    NONCLUSTERE,
+  ),
+
+  null_notnull: $ => (
+    seq(NOT?, NULL$._),
+  ),
+
+  scalar_function_name: $ => choice(
+    $.func_proc_name_server_database_schema,
+    RIGHT,
+    LEFT,
+    BINARY_CHECKSUM,
+    CHECKSU,
+  ),
+
+  begin_conversation_timer: $ => (
+    seq(BEGIN, CONVERSATION, TIMER, '(', LOCAL_ID, ')', TIMEOUT, '=', $.time, optional(';')),
+  ),
+
+  begin_conversation_dialog: $ => (
+    seq(BEGIN, DIALOG, optional(CONVERSATIO,), field("dialog_handle", LOCAL_ID), FROM, SERVICE, field("initiator_service_name", $.service_name), TO, SERVICE, $.target_service_name, =),
+    seq($.service_name, optional(seq(',', field("service_broker_guid", STRING))), ON, CONTRACT, $.contract_name, optional(choice(
+      seq(WITH, ((RELATED_CONVERSATION, RELATED_CONVERSATION_GROUP), '=', LOCAL_ID, optional(','))?, (),
         seq(LIFETIME, '=', (DECIMAL, LOCAL_ID), optional(',')),
         seq()?, optional(seq(ENCRYPTION, '=', $.on_off),))
-        ),), optional(';')),
-    ),
+    ),), optional(';')),
+  ),
 
-    contract_name: $ => (
-        ########,
-    ),
+  contract_name: $ => (
+    ########,
+  ),
 
-    service_name: $ => (
-        ########,
-    ),
+  service_name: $ => (
+    ########,
+  ),
 
-    end_conversation: $ => (
-            seq(END, CONVERSATION, field("conversation_handle", LOCAL_ID), optional(';'), optional(
-        seq(WITH, optional(choice(
+  end_conversation: $ => (
+    seq(END, CONVERSATION, field("conversation_handle", LOCAL_ID), optional(';'), optional(
+      seq(WITH, optional(choice(
         seq(ERROR, '=', $.faliure_code, =, (LOCAL_ID, STRING), DESCRIPTION, '=', $.failure_text, =, choice(
-                    LOCAL_ID,
-                    STRIN
-                ),)
-            ),), CLEANUP?)
-        ),),
+          LOCAL_ID,
+          STRIN
+        ),)
+      ),), CLEANUP?)
+    ),),
+  ),
+
+  waitfor_conversation: $ => (
+    seq(WAITFOR?, '(', $.get_conversation, ')', optional(seq(optional(','), TIMEOUT, field("timeout", $.time))), optional(';')),
+  ),
+
+  get_conversation: $ => (
+    seq(GET, CONVERSATION, GROUP, $.conversation_group_id, =, choice(seq(STRING, LOCAL_ID),), FROM, field("queue", $.queue_id), optional(';')),
+  ),
+
+  queue_id: $ => choice(
+    (seq(field("database_name", $.id_), '.', field("schema_name", $.id_), '.', field("name", $.id_))),
+    $.id,
+  ),
+
+  send_conversation: $ => (
+    seq(SEND, ON, CONVERSATION, $.conversation_handle, =, (STRING, |, LOCAL_ID), MESSAGE, TYPE, field("message_type_name", $.expression), optional(
+      seq('(', $.message_body_expression, =, choice(seq(STRING, LOCAL_ID),), ')')
+    ), optional(';')),
+  ),
+
+  // https://msdn.microsoft.com/en-us/library/ms187752.aspx
+  // TODO: implement runtime check or add new tokens.
+
+  data_type: $ => choice(
+    seq($.scaled, =, choice(seq(VARCHAR, NVARCHAR, BINARY_KEYWORD, VARBINARY_KEYWORD, SQUARE_BRACKET_ID),), '(', MAX, ')'),
+    seq(field("ext_type", $.id_), '(', field("scale", DECIMAL), ',', field("prec", DECIMAL), ')'),
+    seq(field("ext_type", $.id_), '(', field("scale", DECIMAL), ')'),
+    seq(field("ext_type", $.id_), IDENTITY, optional(seq('(', field("seed", DECIMAL), ',', field("inc", DECIMAL), ')'),)),
+    seq(field("double_prec", DOUBLE), PRECISION?),
+    seq(field("unscaled_type", $.id_)),
+  ),
+
+  // https://msdn.microsoft.com/en-us/library/ms179899.aspx
+  constant: $ => choice(
+    seq(STRING, $.datetime, $.or, $.uniqueidentifier),
+    BINARY,
+    seq(optional('-'), choice(seq(DECIMAL, REAL, FLOAT),), ),
+    seq(optional('-'), $.dollar, =, '$', optional(choice(seq('-repeat1(', ')'),)), choice(seq(DECIMAL, FLOAT),)),
+    $.paramete,
+  ),
+
+  // To reduce ambiguity, -X is considered as an application of unary operator
+  primitive_constant: $ => choice(
+    seq(STRING, $.datetime, $.or, $.uniqueidentifier),
+    BINARY,
+    seq(choice(seq(DECIMAL, REAL, FLOAT),), ),
+    seq($.dollar, =, '$', optional(choice(seq('-repeat1(', ')'),)), choice(seq(DECIMAL, FLOAT),)),
+    $.paramete,
+  ),
+
+  keyword: $ => choice(
+    ABORT,
+    ABSOLUTE,
+    ACCENT_SENSITIVITY,
+    ACCESS,
+    ACTION,
+    ACTIVATION,
+    ACTIVE,
+    seq(ADD, //, ?),
+    ADDRESS,
+    AES_128,
+    AES_192,
+    AES_256,
+    AFFINITY,
+    AFTER,
+    AGGREGATE,
+    ALGORITHM,
+    ALL_CONSTRAINTS,
+    ALL_ERRORMSGS,
+    ALL_INDEXES,
+    ALL_LEVELS,
+    ALLOW_ENCRYPTED_VALUE_MODIFICATIONS,
+    ALLOW_PAGE_LOCKS,
+    ALLOW_ROW_LOCKS,
+    ALLOW_SNAPSHOT_ISOLATION,
+    ALLOWED,
+    ALWAYS,
+    ANSI_DEFAULTS,
+    ANSI_NULL_DEFAULT,
+    ANSI_NULL_DFLT_OFF,
+    ANSI_NULL_DFLT_ON,
+    ANSI_NULLS,
+    ANSI_PADDING,
+    ANSI_WARNINGS,
+    APP_NAME,
+    APPLICATION_LOG,
+    APPLOCK_MODE,
+    APPLOCK_TEST,
+    APPLY,
+    ARITHABORT,
+    ARITHIGNORE,
+    ASCII,
+    ASSEMBLY,
+    ASSEMBLYPROPERTY,
+    AT_KEYWORD,
+    AUDIT,
+    AUDIT_GUID,
+    AUTO,
+    AUTO_CLEANUP,
+    AUTO_CLOSE,
+    AUTO_CREATE_STATISTICS,
+    AUTO_DROP,
+    AUTO_SHRINK,
+    AUTO_UPDATE_STATISTICS,
+    AUTO_UPDATE_STATISTICS_ASYNC,
+    AUTOGROW_ALL_FILES,
+    AUTOGROW_SINGLE_FILE,
+    AVAILABILITY,
+    AVG,
+    BACKUP_CLONEDB,
+    BACKUP_PRIORITY,
+    BASE64,
+    BEGIN_DIALOG,
+    BIGINT,
+    BINARY_KEYWORD,
+    BINARY_CHECKSUM,
+    BINDING,
+    BLOB_STORAGE,
+    BROKER,
+    BROKER_INSTANCE,
+    BULK_LOGGED,
+    CALLER,
+    CAP_CPU_PERCENT,
+    CAST,
+    TRY_CAST,
+    CATALOG,
+    CATCH,
+    CERT_ID,
+    CERTENCODED,
+    CERTPRIVATEKEY,
+    CHANGE,
+    CHANGE_RETENTION,
+    CHANGE_TRACKING,
+    CHAR,
+    CHARINDEX,
+    CHECKALLOC,
+    CHECKCATALOG,
+    CHECKCONSTRAINTS,
+    CHECKDB,
+    CHECKFILEGROUP,
+    CHECKSUM,
+    CHECKSUM_AGG,
+    CHECKTABLE,
+    CLEANTABLE,
+    CLEANUP,
+    CLONEDATABASE,
+    COL_LENGTH,
+    COL_NAME,
+    COLLECTION,
+    COLUMN_ENCRYPTION_KEY,
+    COLUMN_MASTER_KEY,
+    COLUMNPROPERTY,
+    COLUMNS,
+    COLUMNSTORE,
+    COLUMNSTORE_ARCHIVE,
+    COMMITTED,
+    COMPATIBILITY_LEVEL,
+    COMPRESS_ALL_ROW_GROUPS,
+    COMPRESSION_DELAY,
+    CONCAT,
+    CONCAT_WS,
+    CONCAT_NULL_YIELDS_NULL,
+    CONTENT,
+    CONTROL,
+    COOKIE,
+    COUNT,
+    COUNT_BIG,
+    COUNTER,
+    CPU,
+    CREATE_NEW,
+    CREATION_DISPOSITION,
+    CREDENTIAL,
+    CRYPTOGRAPHIC,
+    CUME_DIST,
+    CURSOR_CLOSE_ON_COMMIT,
+    CURSOR_DEFAULT,
+    CURSOR_STATUS,
+    DATA,
+    DATA_PURITY,
+    DATABASE_PRINCIPAL_ID,
+    DATABASEPROPERTYEX,
+    DATALENGTH,
+    DATE_CORRELATION_OPTIMIZATION,
+    DATEADD,
+    DATEDIFF,
+    DATENAME,
+    DATEPART,
+    DAYS,
+    DB_CHAINING,
+    DB_FAILOVER,
+    DB_ID,
+    DB_NAME,
+    DBCC,
+    DBREINDEX,
+    DECRYPTION,
+    DEFAULT_DOUBLE_QUOTE,
+    DEFAULT_FULLTEXT_LANGUAGE,
+    DEFAULT_LANGUAGE,
+    DEFINITION,
+    DELAY,
+    DELAYED_DURABILITY,
+    DELETED,
+    DENSE_RANK,
+    DEPENDENTS,
+    DES,
+    DESCRIPTION,
+    DESX,
+    DETERMINISTIC,
+    DHCP,
+    DIALOG,
+    DIFFERENCE,
+    DIRECTORY_NAME,
+    DISABLE,
+    DISABLE_BROKER,
+    DISABLED,
+    DOCUMENT,
+    DROP_EXISTING,
+    DROPCLEANBUFFERS,
+    DYNAMIC,
+    ELEMENTS,
+    EMERGENCY,
+    EMPTY,
+    ENABLE,
+    ENABLE_BROKER,
+    ENCRYPTED,
+    ENCRYPTED_VALUE,
+    ENCRYPTION,
+    ENCRYPTION_TYPE,
+    ENDPOINT_URL,
+    ERROR_BROKER_CONVERSATIONS,
+    ESTIMATEONLY,
+    EXCLUSIVE,
+    EXECUTABLE,
+    EXIST,
+    EXIST_SQUARE_BRACKET,
+    EXPAND,
+    EXPIRY_DATE,
+    EXPLICIT,
+    EXTENDED_LOGICAL_CHECKS,
+    FAIL_OPERATION,
+    FAILOVER_MODE,
+    FAILURE,
+    FAILURE_CONDITION_LEVEL,
+    FAST,
+    FAST_FORWARD,
+    FILE_ID,
+    FILE_IDEX,
+    FILE_NAME,
+    FILEGROUP,
+    FILEGROUP_ID,
+    FILEGROUP_NAME,
+    FILEGROUPPROPERTY,
+    FILEGROWTH,
+    FILENAME,
+    FILEPATH,
+    FILEPROPERTY,
+    FILEPROPERTYEX,
+    FILESTREAM,
+    FILTER,
+    FIRST,
+    FIRST_VALUE,
+    FMTONLY,
+    FOLLOWING,
+    FORCE,
+    FORCE_FAILOVER_ALLOW_DATA_LOSS,
+    FORCED,
+    FORCEPLAN,
+    FORCESCAN,
+    FORMAT,
+    FORWARD_ONLY,
+    FREE,
+    FULLSCAN,
+    FULLTEXT,
+    FULLTEXTCATALOGPROPERTY,
+    FULLTEXTSERVICEPROPERTY,
+    GB,
+    GENERATED,
+    GETDATE,
+    GETUTCDATE,
+    GLOBAL,
+    GO,
+    GREATEST,
+    GROUP_MAX_REQUESTS,
+    GROUPING,
+    GROUPING_ID,
+    HADR,
+    HAS_DBACCESS,
+    HAS_PERMS_BY_NAME,
+    HASH,
+    HEALTH_CHECK_TIMEOUT,
+    HIDDEN_KEYWORD,
+    HIGH,
+    HONOR_BROKER_PRIORITY,
+    HOURS,
+    IDENT_CURRENT,
+    IDENT_INCR,
+    IDENT_SEED,
+    IDENTITY_VALUE,
+    IGNORE_CONSTRAINTS,
+    IGNORE_DUP_KEY,
+    IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX,
+    IGNORE_REPLICATED_TABLE_CACHE,
+    IGNORE_TRIGGERS,
+    IMMEDIATE,
+    IMPERSONATE,
+    IMPLICIT_TRANSACTIONS,
+    IMPORTANCE,
+    INCLUDE_NULL_VALUES,
+    INCREMENTAL,
+    INDEX_COL,
+    INDEXKEY_PROPERTY,
+    INDEXPROPERTY,
+    INITIATOR,
+    INPUT,
+    INSENSITIVE,
+    INSERTED,
+    INT,
+    IP,
+    IS_MEMBER,
+    IS_ROLEMEMBER,
+    IS_SRVROLEMEMBER,
+    ISJSON,
+    ISOLATION,
+    JOB,
+    JSON,
+    JSON_OBJECT,
+    JSON_ARRAY,
+    JSON_VALUE,
+    JSON_QUERY,
+    JSON_MODIFY,
+    JSON_PATH_EXISTS,
+    KB,
+    KEEP,
+    KEEPDEFAULTS,
+    KEEPFIXED,
+    KEEPIDENTITY,
+    KEY_SOURCE,
+    KEYS,
+    KEYSET,
+    LAG,
+    LAST,
+    LAST_VALUE,
+    LEAD,
+    LEAST,
+    LEN,
+    LEVEL,
+    LIST,
+    LISTENER,
+    LISTENER_URL,
+    LOB_COMPACTION,
+    LOCAL,
+    LOCATION,
+    LOCK,
+    LOCK_ESCALATION,
+    LOGIN,
+    LOGINPROPERTY,
+    LOOP,
+    LOW,
+    LOWER,
+    LTRIM,
+    MANUAL,
+    MARK,
+    MASKED,
+    MATERIALIZED,
+    MAX,
+    MAX_CPU_PERCENT,
+    MAX_DOP,
+    MAX_FILES,
+    MAX_IOPS_PER_VOLUME,
+    MAX_MEMORY_PERCENT,
+    MAX_PROCESSES,
+    MAX_QUEUE_READERS,
+    MAX_ROLLOVER_FILES,
+    MAXDOP,
+    MAXRECURSION,
+    MAXSIZE,
+    MB,
+    MEDIUM,
+    MEMORY_OPTIMIZED_DATA,
+    MESSAGE,
+    MIN,
+    MIN_ACTIVE_ROWVERSION,
+    MIN_CPU_PERCENT,
+    MIN_IOPS_PER_VOLUME,
+    MIN_MEMORY_PERCENT,
+    MINUTES,
+    MIRROR_ADDRESS,
+    MIXED_PAGE_ALLOCATION,
+    MODE,
+    MODIFY,
+    MODIFY_SQUARE_BRACKET,
+    MOVE,
+    MULTI_USER,
+    NAME,
+    NCHAR,
+    NESTED_TRIGGERS,
+    NEW_ACCOUNT,
+    NEW_BROKER,
+    NEW_PASSWORD,
+    NEWNAME,
+    NEXT,
+    NO,
+    NO_INFOMSGS,
+    NO_QUERYSTORE,
+    NO_STATISTICS,
+    NO_TRUNCATE,
+    NO_WAIT,
+    NOCOUNT,
+    NODES,
+    NOEXEC,
+    NOEXPAND,
+    NOINDEX,
+    NOLOCK,
+    NON_TRANSACTED_ACCESS,
+    NORECOMPUTE,
+    NORECOVERY,
+    NOTIFICATIONS,
+    NOWAIT,
+    NTILE,
+    NULL_DOUBLE_QUOTE,
+    NUMANODE,
+    NUMBER,
+    NUMERIC_ROUNDABORT,
+    OBJECT,
+    OBJECT_DEFINITION,
+    OBJECT_ID,
+    OBJECT_NAME,
+    OBJECT_SCHEMA_NAME,
+    OBJECTPROPERTY,
+    OBJECTPROPERTYEX,
+    OFFLINE,
+    OFFSET,
+    OLD_ACCOUNT,
+    ONLINE,
+    ONLY,
+    OPEN_EXISTING,
+    OPENJSON,
+    OPTIMISTIC,
+    OPTIMIZE,
+    OPTIMIZE_FOR_SEQUENTIAL_KEY,
+    ORIGINAL_DB_NAME,
+    ORIGINAL_LOGIN,
+    OUT,
+    OUTPUT,
+    OVERRIDE,
+    OWNER,
+    OWNERSHIP,
+    PAD_INDEX,
+    PAGE_VERIFY,
+    PAGECOUNT,
+    PAGLOCK,
+    PARAMETERIZATION,
+    PARSENAME,
+    PARSEONLY,
+    PARTITION,
+    PARTITIONS,
+    PARTNER,
+    PATH,
+    PATINDEX,
+    PAUSE,
+    PDW_SHOWSPACEUSED,
+    PERCENT_RANK,
+    PERCENTILE_CONT,
+    PERCENTILE_DISC,
+    PERMISSIONS,
+    PERSIST_SAMPLE_PERCENT,
+    PHYSICAL_ONLY,
+    POISON_MESSAGE_HANDLING,
+    POOL,
+    PORT,
+    PRECEDING,
+    PRIMARY_ROLE,
+    PRIOR,
+    PRIORITY,
+    PRIORITY_LEVEL,
+    PRIVATE,
+    PRIVATE_KEY,
+    PRIVILEGES,
+    PROCCACHE,
+    PROCEDURE_NAME,
+    PROPERTY,
+    PROVIDER,
+    PROVIDER_KEY_NAME,
+    PWDCOMPARE,
+    PWDENCRYPT,
+    QUERY,
+    QUERY_SQUARE_BRACKET,
+    QUEUE,
+    QUEUE_DELAY,
+    QUOTED_IDENTIFIER,
+    QUOTENAME,
+    RANDOMIZED,
+    RANGE,
+    RANK,
+    RC2,
+    RC4,
+    RC4_128,
+    READ_COMMITTED_SNAPSHOT,
+    READ_ONLY,
+    READ_ONLY_ROUTING_LIST,
+    READ_WRITE,
+    READCOMMITTED,
+    READCOMMITTEDLOCK,
+    READONLY,
+    READPAST,
+    READUNCOMMITTED,
+    READWRITE,
+    REBUILD,
+    RECEIVE,
+    RECOMPILE,
+    RECOVERY,
+    RECURSIVE_TRIGGERS,
+    RELATIVE,
+    REMOTE,
+    REMOTE_PROC_TRANSACTIONS,
+    REMOTE_SERVICE_NAME,
+    REMOVE,
+    REORGANIZE,
+    REPAIR_ALLOW_DATA_LOSS,
+    REPAIR_FAST,
+    REPAIR_REBUILD,
+    REPEATABLE,
+    REPEATABLEREAD,
+    REPLACE,
+    REPLICA,
+    REPLICATE,
+    REQUEST_MAX_CPU_TIME_SEC,
+    REQUEST_MAX_MEMORY_GRANT_PERCENT,
+    REQUEST_MEMORY_GRANT_TIMEOUT_SEC,
+    REQUIRED_SYNCHRONIZED_SECONDARIES_TO_COMMIT,
+    RESAMPLE,
+    RESERVE_DISK_SPACE,
+    RESOURCE,
+    RESOURCE_MANAGER_LOCATION,
+    RESTRICTED_USER,
+    RESUMABLE,
+    RETENTION,
+    REVERSE,
+    ROBUST,
+    ROOT,
+    ROUTE,
+    ROW,
+    ROW_NUMBER,
+    ROWGUID,
+    ROWLOCK,
+    ROWS,
+    RTRIM,
+    SAMPLE,
+    SCHEMA_ID,
+    SCHEMA_NAME,
+    SCHEMABINDING,
+    SCOPE_IDENTITY,
+    SCOPED,
+    SCROLL,
+    SCROLL_LOCKS,
+    SEARCH,
+    SECONDARY,
+    SECONDARY_ONLY,
+    SECONDARY_ROLE,
+    SECONDS,
+    SECRET,
+    SECURABLES,
+    SECURITY,
+    SECURITY_LOG,
+    SEEDING_MODE,
+    SELF,
+    SEMI_SENSITIVE,
+    SEND,
+    SENT,
+    SEQUENCE,
+    SEQUENCE_NUMBER,
+    SERIALIZABLE,
+    SERVERPROPERTY,
+    SERVICEBROKER,
+    SESSIONPROPERTY,
+    SESSION_TIMEOUT,
+    SETERROR,
+    SHARE,
+    SHARED,
+    SHOWCONTIG,
+    SHOWPLAN,
+    SHOWPLAN_ALL,
+    SHOWPLAN_TEXT,
+    SHOWPLAN_XML,
+    SIGNATURE,
+    SIMPLE,
+    SINGLE_USER,
+    SIZE,
+    SMALLINT,
+    SNAPSHOT,
+    SORT_IN_TEMPDB,
+    SOUNDEX,
+    SPACE_KEYWORD,
+    SPARSE,
+    SPATIAL_WINDOW_MAX_CELLS,
+    SQL_VARIANT_PROPERTY,
+    STANDBY,
+    START_DATE,
+    STATIC,
+    STATISTICS_INCREMENTAL,
+    STATISTICS_NORECOMPUTE,
+    STATS_DATE,
+    STATS_STREAM,
+    STATUS,
+    STATUSONLY,
+    STDEV,
+    STDEVP,
+    STOPLIST,
+    STR,
+    STRING_AGG,
+    STRING_ESCAPE,
+    STUFF,
+    SUBJECT,
+    SUBSCRIBE,
+    SUBSCRIPTION,
+    SUBSTRING,
+    SUM,
+    SUSER_ID,
+    SUSER_NAME,
+    SUSER_SID,
+    SUSER_SNAME,
+    SUSPEND,
+    SYMMETRIC,
+    SYNCHRONOUS_COMMIT,
+    SYNONYM,
+    SYSTEM,
+    TABLERESULTS,
+    TABLOCK,
+    TABLOCKX,
+    TAKE,
+    TARGET_RECOVERY_TIME,
+    TB,
+    TEXTIMAGE_ON,
+    THROW,
+    TIES,
+    TIME,
+    TIMEOUT,
+    TIMER,
+    TINYINT,
+    TORN_PAGE_DETECTION,
+    TRACKING,
+    TRANSACTION_ID,
+    TRANSFORM_NOISE_WORDS,
+    TRANSLATE,
+    TRIM,
+    TRIPLE_DES,
+    TRIPLE_DES_3KEY,
+    TRUSTWORTHY,
+    TRY,
+    TSQL,
+    TWO_DIGIT_YEAR_CUTOFF,
+    TYPE,
+    TYPE_ID,
+    TYPE_NAME,
+    TYPE_WARNING,
+    TYPEPROPERTY,
+    UNBOUNDED,
+    UNCOMMITTED,
+    UNICODE,
+    UNKNOWN,
+    UNLIMITED,
+    UNMASK,
+    UOW,
+    UPDLOCK,
+    UPPER,
+    USER_ID,
+    USER_NAME,
+    USING,
+    VALID_XML,
+    VALIDATION,
+    VALUE,
+    VALUE_SQUARE_BRACKET,
+    VAR,
+    VARBINARY_KEYWORD,
+    VARP,
+    VERIFY_CLONEDB,
+    VERSION,
+    VIEW_METADATA,
+    VIEWS,
+    WAIT,
+    WELL_FORMED_XML,
+    WITHOUT_ARRAY_WRAPPER,
+    WORK,
+    WORKLOAD,
+    XLOCK,
+    XML,
+    XML_COMPRESSION,
+    XMLDATA,
+    XMLNAMESPACES,
+    XMLSCHEMA,
+    XSINIL,
+    ZON,
+    ,
+    ABORT_AFTER_WAIT,
+    ABSENT,
+    ADMINISTER,
+    AES,
+    ALLOW_CONNECTIONS,
+    ALLOW_MULTIPLE_EVENT_LOSS,
+    ALLOW_SINGLE_EVENT_LOSS,
+    ANONYMOUS,
+    APPEND,
+    APPLICATION,
+    ASYMMETRIC,
+    ASYNCHRONOUS_COMMIT,
+    AUTHENTICATE,
+    AUTHENTICATION,
+    AUTOMATED_BACKUP_PREFERENCE,
+    AUTOMATIC,
+    AVAILABILITY_MODE,
+    BEFORE,
+    BLOCK,
+    BLOCKERS,
+    BLOCKSIZE,
+    BLOCKING_HIERARCHY,
+    BUFFER,
+    BUFFERCOUNT,
+    CACHE,
+    CALLED,
+    CERTIFICATE,
+    CHANGETABLE,
+    CHANGES,
+    CHECK_POLICY,
+    CHECK_EXPIRATION,
+    CLASSIFIER_FUNCTION,
+    CLUSTER,
+    COMPRESS,
+    COMPRESSION,
+    CONNECT,
+    CONNECTION,
+    CONFIGURATION,
+    CONNECTIONPROPERTY,
+    CONTAINMENT,
+    CONTEXT,
+    CONTEXT_INFO,
+    CONTINUE_AFTER_ERROR,
+    CONTRACT,
+    CONTRACT_NAME,
+    CONVERSATION,
+    COPY_ONLY,
+    CURRENT_REQUEST_ID,
+    CURRENT_TRANSACTION_ID,
+    CYCLE,
+    DATA_COMPRESSION,
+    DATA_SOURCE,
+    DATABASE_MIRRORING,
+    DATASPACE,
+    DDL,
+    DECOMPRESS,
+    DEFAULT_DATABASE,
+    DEFAULT_SCHEMA,
+    DIAGNOSTICS,
+    DIFFERENTIAL,
+    DISTRIBUTION,
+    DTC_SUPPORT,
+    ENABLED,
+    ENDPOINT,
+    ERROR,
+    ERROR_LINE,
+    ERROR_MESSAGE,
+    ERROR_NUMBER,
+    ERROR_PROCEDURE,
+    ERROR_SEVERITY,
+    ERROR_STATE,
+    EVENT,
+    EVENTDATA,
+    EVENT_RETENTION_MODE,
+    EXECUTABLE_FILE,
+    EXPIREDATE,
+    EXTENSION,
+    EXTERNAL_ACCESS,
+    FAILOVER,
+    FAILURECONDITIONLEVEL,
+    FAN_IN,
+    FILE_SNAPSHOT,
+    FORCESEEK,
+    FORCE_SERVICE_ALLOW_DATA_LOSS,
+    FORMATMESSAGE,
+    GET,
+    GET_FILESTREAM_TRANSACTION_CONTEXT,
+    GETANCESTOR,
+    GETANSINULL,
+    GETDESCENDANT,
+    GETLEVEL,
+    GETREPARENTEDVALUE,
+    GETROOT,
+    GOVERNOR,
+    HASHED,
+    HEALTHCHECKTIMEOUT,
+    HEAP,
+    HIERARCHYID,
+    HOST_ID,
+    HOST_NAME,
+    IIF,
+    IO,
+    INCLUDE,
+    INCREMENT,
+    INFINITE,
+    INIT,
+    INSTEAD,
+    ISDESCENDANTOF,
+    ISNULL,
+    ISNUMERIC,
+    KERBEROS,
+    KEY_PATH,
+    KEY_STORE_PROVIDER_NAME,
+    LANGUAGE,
+    LIBRARY,
+    LIFETIME,
+    LINKED,
+    LINUX,
+    LISTENER_IP,
+    LISTENER_PORT,
+    LOCAL_SERVICE_NAME,
+    LOG,
+    MASK,
+    MATCHED,
+    MASTER,
+    MAX_MEMORY,
+    MAXTRANSFER,
+    MAXVALUE,
+    MAX_DISPATCH_LATENCY,
+    MAX_DURATION,
+    MAX_EVENT_SIZE,
+    MAX_SIZE,
+    MAX_OUTSTANDING_IO_PER_VOLUME,
+    MEDIADESCRIPTION,
+    MEDIANAME,
+    MEMBER,
+    MEMORY_PARTITION_MODE,
+    MESSAGE_FORWARDING,
+    MESSAGE_FORWARD_SIZE,
+    MINVALUE,
+    MIRROR,
+    MUST_CHANGE,
+    NEWID,
+    NEWSEQUENTIALID,
+    NOFORMAT,
+    NOINIT,
+    NONE,
+    NOREWIND,
+    NOSKIP,
+    NOUNLOAD,
+    NO_CHECKSUM,
+    NO_COMPRESSION,
+    NO_EVENT_LOSS,
+    NOTIFICATION,
+    NTLM,
+    OLD_PASSWORD,
+    ON_FAILURE,
+    OPERATIONS,
+    PAGE,
+    PARAM_NODE,
+    PARTIAL,
+    PASSWORD,
+    PERMISSION_SET,
+    PER_CPU,
+    PER_DB,
+    PER_NODE,
+    PERSISTED,
+    PLATFORM,
+    POLICY,
+    PREDICATE,
+    PROCESS,
+    PROFILE,
+    PYTHON,
+    R,
+    READ_WRITE_FILEGROUPS,
+    REGENERATE,
+    RELATED_CONVERSATION,
+    RELATED_CONVERSATION_GROUP,
+    REQUIRED,
+    RESET,
+    RESOURCES,
+    RESTART,
+    RESUME,
+    RETAINDAYS,
+    RETURNS,
+    REWIND,
+    ROLE,
+    ROUND_ROBIN,
+    ROWCOUNT_BIG,
+    RSA_512,
+    RSA_1024,
+    RSA_2048,
+    RSA_3072,
+    RSA_4096,
+    SAFETY,
+    SAFE,
+    SCHEDULER,
+    SCHEME,
+    SCRIPT,
+    SERVER,
+    SERVICE,
+    SERVICE_BROKER,
+    SERVICE_NAME,
+    SESSION,
+    SESSION_CONTEXT,
+    SETTINGS,
+    SHRINKLOG,
+    SID,
+    SKIP_KEYWORD,
+    SOFTNUMA,
+    SOURCE,
+    SPECIFICATION,
+    SPLIT,
+    SQL,
+    SQLDUMPERFLAGS,
+    SQLDUMPERPATH,
+    SQLDUMPERTIMEOUT,
+    STATE,
+    STATS,
+    START,
+    STARTED,
+    STARTUP_STATE,
+    STOP,
+    STOPPED,
+    STOP_ON_ERROR,
+    SUPPORTED,
+    SWITCH,
+    TAPE,
+    TARGET,
+    TCP,
+    TOSTRING,
+    TRACE,
+    TRACK_CAUSALITY,
+    TRANSFER,
+    UNCHECKED,
+    UNLOCK,
+    UNSAFE,
+    URL,
+    USED,
+    VERBOSELOGGING,
+    VISIBILITY,
+    WAIT_AT_LOW_PRIORITY,
+    WINDOWS,
+    WITHOUT,
+    WITNESS,
+    XACT_ABORT,
+    XACT_STAT,
+    ,
+    ABS,
+    ACOS,
+    ASIN,
+    ATAN,
+    ATN2,
+    CEILING,
+    COS,
+    COT,
+    DEGREES,
+    EXP,
+    FLOOR,
+    LOG10,
+    PI,
+    POWER,
+    RADIANS,
+    RAND,
+    ROUND,
+    SIGN,
+    SIN,
+    SQRT,
+    SQUARE,
+    TA,
+    ,
+    CURRENT_TIMEZONE,
+    CURRENT_TIMEZONE_ID,
+    DATE_BUCKET,
+    DATEDIFF_BIG,
+    DATEFROMPARTS,
+    DATETIME2FROMPARTS,
+    DATETIMEFROMPARTS,
+    DATETIMEOFFSETFROMPARTS,
+    DATETRUNC,
+    DAY,
+    EOMONTH,
+    ISDATE,
+    MONTH,
+    SMALLDATETIMEFROMPARTS,
+    SWITCHOFFSET,
+    SYSDATETIME,
+    SYSDATETIMEOFFSET,
+    SYSUTCDATETIME,
+    TIMEFROMPARTS,
+    TODATETIMEOFFSET,
+    YEA,
+    ,
+    QUARTER,
+    DAYOFYEAR,
+    WEEK,
+    HOUR,
+    MINUTE,
+    SECOND,
+    MILLISECOND,
+    MICROSECOND,
+    NANOSECOND,
+    TZOFFSET,
+    ISO_WEEK,
+    WEEKDA,
+    ,
+    YEAR_ABBR,
+    QUARTER_ABBR,
+    MONTH_ABBR,
+    DAYOFYEAR_ABBR,
+    DAY_ABBR,
+    WEEK_ABBR,
+    HOUR_ABBR,
+    MINUTE_ABBR,
+    SECOND_ABBR,
+    MILLISECOND_ABBR,
+    MICROSECOND_ABBR,
+    NANOSECOND_ABBR,
+    TZOFFSET_ABBR,
+    ISO_WEEK_ABBR,
+    WEEKDAY_ABB,
+    ,
+    SP_EXECUTESQ,
+    ,
+    VARCHAR,
+    NVARCHAR,
+    PRECISION,
+    FILESTREAM_O,
+  ),
+
+  // https://msdn.microsoft.com/en-us/library/ms175874.aspx
+  id_: $ => choice(
+    ID,
+    TEMP_ID,
+    DOUBLE_QUOTE_ID,
+    DOUBLE_QUOTE_BLANK,
+    SQUARE_BRACKET_ID,
+    $.keyword,
+    RA,
+  ),
+
+  simple_id: $ => (
+    I,
+  ),
+
+  id_or_string: $ => choice(
+    $.id_,
+    STRIN,
+  ),
+
+  // https://msdn.microsoft.com/en-us/library/ms188074.aspx
+  // Spaces are allowed for comparison operators.
+  comparison_operator: $ => choice(
+    '=',
+    '>',
+    '<',
+    seq('<', '='),
+    seq('>', '='),
+    seq('<', '>'),
+    seq('!', '='),
+    seq('!', '>'),
+    seq('!', '<'),
+  ),
+
+  assignment_operator: $ => choice(
+    '+=',
+    '-=',
+    '*=',
+    '/=',
+    '%=',
+    '&=',
+    '^=',
+    '|=',
+  ),
+
+  file_size: $ => (
+    seq(DECIMAL, optional(choice(seq(KB, MB, GB, TB, '%'),))),
+  ),
+
+  // ***************************************************************************************************************
+
+  table_source_item: $ => choice(
+    seq($.full_table_name, $.deprecated_table_hint, $.as_table_alias), // this is currently allowed
+    seq(
+      $.full_table_name,
+      optional($.as_table_alias),
+      optional(choice($.with_table_hints, $.deprecated_table_hint, $.sybase_legacy_hints))
     ),
+    seq($.rowset_function, optional($.as_table_alias)),
+    seq('(', $.derived_table, ')', optional(seq($.as_table_alias, optional($.column_alias_list)))),
+    seq($.change_table, optional($.as_table_alias)),
+    seq($.nodes_method, optional($.as_table_alias, optional(column_alias_list))),
+    seq($.function_call, optional($.as_table_alias, optional(column_alias_list))),
+    seq(field("loc_id", LOCAL_ID), optional($.as_table_alias)),
+    seq(field("loc_id_call", LOCAL_ID), '.', field("loc_fcall", $.function_call), optional(seq($.as_table_alias, optional($.column_alias_list)))),
+    $.open_xml,
+    $.open_json,
+    seq(DOUBLE_COLON, field("oldstyle_fcall", $.function_call), optional($.as_table_alias)), // Build-in function (old syntax)
+    seq('(', $.table_source, ')'),
+  ),
 
-    waitfor_conversation: $ => (
-            seq(WAITFOR?, '(', $.get_conversation, ')', optional(seq(optional(','), TIMEOUT, field("timeout", $.time))), optional(';')),
-    ),
-
-    get_conversation: $ => (
-            seq(GET, CONVERSATION, GROUP, $.conversation_group_id, =, choice(seq(STRING, LOCAL_ID),), FROM, field("queue", $.queue_id), optional(';')),
-    ),
-
-    queue_id: $ => choice(
-        (seq(field("database_name", $.id_), '.', field("schema_name", $.id_), '.', field("name", $.id_))),
-        $.id,
-    ),
-
-    send_conversation: $ => (
-            seq(SEND, ON, CONVERSATION, $.conversation_handle, =, (STRING, |, LOCAL_ID), MESSAGE, TYPE, field("message_type_name", $.expression), optional(
-        seq('(', $.message_body_expression, =, choice(seq(STRING, LOCAL_ID),), ')')
-        ), optional(';')),
-    ),
-
-    // https://msdn.microsoft.com/en-us/library/ms187752.aspx
-    // TODO: implement runtime check or add new tokens.
-
-    data_type: $ => choice(
-            seq($.scaled, =, choice(seq(VARCHAR, NVARCHAR, BINARY_KEYWORD, VARBINARY_KEYWORD, SQUARE_BRACKET_ID),), '(', MAX, ')'),
-        seq(field("ext_type", $.id_), '(', field("scale", DECIMAL), ',', field("prec", DECIMAL), ')'),
-        seq(field("ext_type", $.id_), '(', field("scale", DECIMAL), ')'),
-        seq(field("ext_type", $.id_), IDENTITY, optional(seq('(', field("seed", DECIMAL), ',', field("inc", DECIMAL), ')'),)),
-        seq(field("double_prec", DOUBLE), PRECISION?),
-        seq(field("unscaled_type", $.id_)),
-    ),
-
-    // https://msdn.microsoft.com/en-us/library/ms179899.aspx
-    constant: $ => choice(
-            seq(STRING, $.datetime, $.or, $.uniqueidentifier),
-        BINARY,
-        seq(optional('-'), choice(seq(DECIMAL, REAL, FLOAT),), ),
-        seq(optional('-'), $.dollar, =, '$', optional(choice(seq('-repeat1(', ')'),)), choice(seq(DECIMAL, FLOAT),)),
-        $.paramete,
-    ),
-
-    // To reduce ambiguity, -X is considered as an application of unary operator
-    primitive_constant: $ => choice(
-            seq(STRING, $.datetime, $.or, $.uniqueidentifier),
-        BINARY,
-        seq(choice(seq(DECIMAL, REAL, FLOAT),), ),
-        seq($.dollar, =, '$', optional(choice(seq('-repeat1(', ')'),)), choice(seq(DECIMAL, FLOAT),)),
-        $.paramete,
-    ),
-
-    keyword: $ => choice(
-        ABORT,
-        ABSOLUTE,
-        ACCENT_SENSITIVITY,
-        ACCESS,
-        ACTION,
-        ACTIVATION,
-        ACTIVE,
-        seq(ADD, //, ?),
-        ADDRESS,
-        AES_128,
-        AES_192,
-        AES_256,
-        AFFINITY,
-        AFTER,
-        AGGREGATE,
-        ALGORITHM,
-        ALL_CONSTRAINTS,
-        ALL_ERRORMSGS,
-        ALL_INDEXES,
-        ALL_LEVELS,
-        ALLOW_ENCRYPTED_VALUE_MODIFICATIONS,
-        ALLOW_PAGE_LOCKS,
-        ALLOW_ROW_LOCKS,
-        ALLOW_SNAPSHOT_ISOLATION,
-        ALLOWED,
-        ALWAYS,
-        ANSI_DEFAULTS,
-        ANSI_NULL_DEFAULT,
-        ANSI_NULL_DFLT_OFF,
-        ANSI_NULL_DFLT_ON,
-        ANSI_NULLS,
-        ANSI_PADDING,
-        ANSI_WARNINGS,
-        APP_NAME,
-        APPLICATION_LOG,
-        APPLOCK_MODE,
-        APPLOCK_TEST,
-        APPLY,
-        ARITHABORT,
-        ARITHIGNORE,
-        ASCII,
-        ASSEMBLY,
-        ASSEMBLYPROPERTY,
-        AT_KEYWORD,
-        AUDIT,
-        AUDIT_GUID,
-        AUTO,
-        AUTO_CLEANUP,
-        AUTO_CLOSE,
-        AUTO_CREATE_STATISTICS,
-        AUTO_DROP,
-        AUTO_SHRINK,
-        AUTO_UPDATE_STATISTICS,
-        AUTO_UPDATE_STATISTICS_ASYNC,
-        AUTOGROW_ALL_FILES,
-        AUTOGROW_SINGLE_FILE,
-        AVAILABILITY,
-        AVG,
-        BACKUP_CLONEDB,
-        BACKUP_PRIORITY,
-        BASE64,
-        BEGIN_DIALOG,
-        BIGINT,
-        BINARY_KEYWORD,
-        BINARY_CHECKSUM,
-        BINDING,
-        BLOB_STORAGE,
-        BROKER,
-        BROKER_INSTANCE,
-        BULK_LOGGED,
-        CALLER,
-        CAP_CPU_PERCENT,
-        CAST,
-        TRY_CAST,
-        CATALOG,
-        CATCH,
-        CERT_ID,
-        CERTENCODED,
-        CERTPRIVATEKEY,
-        CHANGE,
-        CHANGE_RETENTION,
-        CHANGE_TRACKING,
-        CHAR,
-        CHARINDEX,
-        CHECKALLOC,
-        CHECKCATALOG,
-        CHECKCONSTRAINTS,
-        CHECKDB,
-        CHECKFILEGROUP,
-        CHECKSUM,
-        CHECKSUM_AGG,
-        CHECKTABLE,
-        CLEANTABLE,
-        CLEANUP,
-        CLONEDATABASE,
-        COL_LENGTH,
-        COL_NAME,
-        COLLECTION,
-        COLUMN_ENCRYPTION_KEY,
-        COLUMN_MASTER_KEY,
-        COLUMNPROPERTY,
-        COLUMNS,
-        COLUMNSTORE,
-        COLUMNSTORE_ARCHIVE,
-        COMMITTED,
-        COMPATIBILITY_LEVEL,
-        COMPRESS_ALL_ROW_GROUPS,
-        COMPRESSION_DELAY,
-        CONCAT,
-        CONCAT_WS,
-        CONCAT_NULL_YIELDS_NULL,
-        CONTENT,
-        CONTROL,
-        COOKIE,
-        COUNT,
-        COUNT_BIG,
-        COUNTER,
-        CPU,
-        CREATE_NEW,
-        CREATION_DISPOSITION,
-        CREDENTIAL,
-        CRYPTOGRAPHIC,
-        CUME_DIST,
-        CURSOR_CLOSE_ON_COMMIT,
-        CURSOR_DEFAULT,
-        CURSOR_STATUS,
-        DATA,
-        DATA_PURITY,
-        DATABASE_PRINCIPAL_ID,
-        DATABASEPROPERTYEX,
-        DATALENGTH,
-        DATE_CORRELATION_OPTIMIZATION,
-        DATEADD,
-        DATEDIFF,
-        DATENAME,
-        DATEPART,
-        DAYS,
-        DB_CHAINING,
-        DB_FAILOVER,
-        DB_ID,
-        DB_NAME,
-        DBCC,
-        DBREINDEX,
-        DECRYPTION,
-        DEFAULT_DOUBLE_QUOTE,
-        DEFAULT_FULLTEXT_LANGUAGE,
-        DEFAULT_LANGUAGE,
-        DEFINITION,
-        DELAY,
-        DELAYED_DURABILITY,
-        DELETED,
-        DENSE_RANK,
-        DEPENDENTS,
-        DES,
-        DESCRIPTION,
-        DESX,
-        DETERMINISTIC,
-        DHCP,
-        DIALOG,
-        DIFFERENCE,
-        DIRECTORY_NAME,
-        DISABLE,
-        DISABLE_BROKER,
-        DISABLED,
-        DOCUMENT,
-        DROP_EXISTING,
-        DROPCLEANBUFFERS,
-        DYNAMIC,
-        ELEMENTS,
-        EMERGENCY,
-        EMPTY,
-        ENABLE,
-        ENABLE_BROKER,
-        ENCRYPTED,
-        ENCRYPTED_VALUE,
-        ENCRYPTION,
-        ENCRYPTION_TYPE,
-        ENDPOINT_URL,
-        ERROR_BROKER_CONVERSATIONS,
-        ESTIMATEONLY,
-        EXCLUSIVE,
-        EXECUTABLE,
-        EXIST,
-        EXIST_SQUARE_BRACKET,
-        EXPAND,
-        EXPIRY_DATE,
-        EXPLICIT,
-        EXTENDED_LOGICAL_CHECKS,
-        FAIL_OPERATION,
-        FAILOVER_MODE,
-        FAILURE,
-        FAILURE_CONDITION_LEVEL,
-        FAST,
-        FAST_FORWARD,
-        FILE_ID,
-        FILE_IDEX,
-        FILE_NAME,
-        FILEGROUP,
-        FILEGROUP_ID,
-        FILEGROUP_NAME,
-        FILEGROUPPROPERTY,
-        FILEGROWTH,
-        FILENAME,
-        FILEPATH,
-        FILEPROPERTY,
-        FILEPROPERTYEX,
-        FILESTREAM,
-        FILTER,
-        FIRST,
-        FIRST_VALUE,
-        FMTONLY,
-        FOLLOWING,
-        FORCE,
-        FORCE_FAILOVER_ALLOW_DATA_LOSS,
-        FORCED,
-        FORCEPLAN,
-        FORCESCAN,
-        FORMAT,
-        FORWARD_ONLY,
-        FREE,
-        FULLSCAN,
-        FULLTEXT,
-        FULLTEXTCATALOGPROPERTY,
-        FULLTEXTSERVICEPROPERTY,
-        GB,
-        GENERATED,
-        GETDATE,
-        GETUTCDATE,
-        GLOBAL,
-        GO,
-        GREATEST,
-        GROUP_MAX_REQUESTS,
-        GROUPING,
-        GROUPING_ID,
-        HADR,
-        HAS_DBACCESS,
-        HAS_PERMS_BY_NAME,
-        HASH,
-        HEALTH_CHECK_TIMEOUT,
-        HIDDEN_KEYWORD,
-        HIGH,
-        HONOR_BROKER_PRIORITY,
-        HOURS,
-        IDENT_CURRENT,
-        IDENT_INCR,
-        IDENT_SEED,
-        IDENTITY_VALUE,
-        IGNORE_CONSTRAINTS,
-        IGNORE_DUP_KEY,
-        IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX,
-        IGNORE_REPLICATED_TABLE_CACHE,
-        IGNORE_TRIGGERS,
-        IMMEDIATE,
-        IMPERSONATE,
-        IMPLICIT_TRANSACTIONS,
-        IMPORTANCE,
-        INCLUDE_NULL_VALUES,
-        INCREMENTAL,
-        INDEX_COL,
-        INDEXKEY_PROPERTY,
-        INDEXPROPERTY,
-        INITIATOR,
-        INPUT,
-        INSENSITIVE,
-        INSERTED,
-        INT,
-        IP,
-        IS_MEMBER,
-        IS_ROLEMEMBER,
-        IS_SRVROLEMEMBER,
-        ISJSON,
-        ISOLATION,
-        JOB,
-        JSON,
-        JSON_OBJECT,
-        JSON_ARRAY,
-        JSON_VALUE,
-        JSON_QUERY,
-        JSON_MODIFY,
-        JSON_PATH_EXISTS,
-        KB,
-        KEEP,
-        KEEPDEFAULTS,
-        KEEPFIXED,
-        KEEPIDENTITY,
-        KEY_SOURCE,
-        KEYS,
-        KEYSET,
-        LAG,
-        LAST,
-        LAST_VALUE,
-        LEAD,
-        LEAST,
-        LEN,
-        LEVEL,
-        LIST,
-        LISTENER,
-        LISTENER_URL,
-        LOB_COMPACTION,
-        LOCAL,
-        LOCATION,
-        LOCK,
-        LOCK_ESCALATION,
-        LOGIN,
-        LOGINPROPERTY,
-        LOOP,
-        LOW,
-        LOWER,
-        LTRIM,
-        MANUAL,
-        MARK,
-        MASKED,
-        MATERIALIZED,
-        MAX,
-        MAX_CPU_PERCENT,
-        MAX_DOP,
-        MAX_FILES,
-        MAX_IOPS_PER_VOLUME,
-        MAX_MEMORY_PERCENT,
-        MAX_PROCESSES,
-        MAX_QUEUE_READERS,
-        MAX_ROLLOVER_FILES,
-        MAXDOP,
-        MAXRECURSION,
-        MAXSIZE,
-        MB,
-        MEDIUM,
-        MEMORY_OPTIMIZED_DATA,
-        MESSAGE,
-        MIN,
-        MIN_ACTIVE_ROWVERSION,
-        MIN_CPU_PERCENT,
-        MIN_IOPS_PER_VOLUME,
-        MIN_MEMORY_PERCENT,
-        MINUTES,
-        MIRROR_ADDRESS,
-        MIXED_PAGE_ALLOCATION,
-        MODE,
-        MODIFY,
-        MODIFY_SQUARE_BRACKET,
-        MOVE,
-        MULTI_USER,
-        NAME,
-        NCHAR,
-        NESTED_TRIGGERS,
-        NEW_ACCOUNT,
-        NEW_BROKER,
-        NEW_PASSWORD,
-        NEWNAME,
-        NEXT,
-        NO,
-        NO_INFOMSGS,
-        NO_QUERYSTORE,
-        NO_STATISTICS,
-        NO_TRUNCATE,
-        NO_WAIT,
-        NOCOUNT,
-        NODES,
-        NOEXEC,
-        NOEXPAND,
-        NOINDEX,
-        NOLOCK,
-        NON_TRANSACTED_ACCESS,
-        NORECOMPUTE,
-        NORECOVERY,
-        NOTIFICATIONS,
-        NOWAIT,
-        NTILE,
-        NULL_DOUBLE_QUOTE,
-        NUMANODE,
-        NUMBER,
-        NUMERIC_ROUNDABORT,
-        OBJECT,
-        OBJECT_DEFINITION,
-        OBJECT_ID,
-        OBJECT_NAME,
-        OBJECT_SCHEMA_NAME,
-        OBJECTPROPERTY,
-        OBJECTPROPERTYEX,
-        OFFLINE,
-        OFFSET,
-        OLD_ACCOUNT,
-        ONLINE,
-        ONLY,
-        OPEN_EXISTING,
-        OPENJSON,
-        OPTIMISTIC,
-        OPTIMIZE,
-        OPTIMIZE_FOR_SEQUENTIAL_KEY,
-        ORIGINAL_DB_NAME,
-        ORIGINAL_LOGIN,
-        OUT,
-        OUTPUT,
-        OVERRIDE,
-        OWNER,
-        OWNERSHIP,
-        PAD_INDEX,
-        PAGE_VERIFY,
-        PAGECOUNT,
-        PAGLOCK,
-        PARAMETERIZATION,
-        PARSENAME,
-        PARSEONLY,
-        PARTITION,
-        PARTITIONS,
-        PARTNER,
-        PATH,
-        PATINDEX,
-        PAUSE,
-        PDW_SHOWSPACEUSED,
-        PERCENT_RANK,
-        PERCENTILE_CONT,
-        PERCENTILE_DISC,
-        PERMISSIONS,
-        PERSIST_SAMPLE_PERCENT,
-        PHYSICAL_ONLY,
-        POISON_MESSAGE_HANDLING,
-        POOL,
-        PORT,
-        PRECEDING,
-        PRIMARY_ROLE,
-        PRIOR,
-        PRIORITY,
-        PRIORITY_LEVEL,
-        PRIVATE,
-        PRIVATE_KEY,
-        PRIVILEGES,
-        PROCCACHE,
-        PROCEDURE_NAME,
-        PROPERTY,
-        PROVIDER,
-        PROVIDER_KEY_NAME,
-        PWDCOMPARE,
-        PWDENCRYPT,
-        QUERY,
-        QUERY_SQUARE_BRACKET,
-        QUEUE,
-        QUEUE_DELAY,
-        QUOTED_IDENTIFIER,
-        QUOTENAME,
-        RANDOMIZED,
-        RANGE,
-        RANK,
-        RC2,
-        RC4,
-        RC4_128,
-        READ_COMMITTED_SNAPSHOT,
-        READ_ONLY,
-        READ_ONLY_ROUTING_LIST,
-        READ_WRITE,
-        READCOMMITTED,
-        READCOMMITTEDLOCK,
-        READONLY,
-        READPAST,
-        READUNCOMMITTED,
-        READWRITE,
-        REBUILD,
-        RECEIVE,
-        RECOMPILE,
-        RECOVERY,
-        RECURSIVE_TRIGGERS,
-        RELATIVE,
-        REMOTE,
-        REMOTE_PROC_TRANSACTIONS,
-        REMOTE_SERVICE_NAME,
-        REMOVE,
-        REORGANIZE,
-        REPAIR_ALLOW_DATA_LOSS,
-        REPAIR_FAST,
-        REPAIR_REBUILD,
-        REPEATABLE,
-        REPEATABLEREAD,
-        REPLACE,
-        REPLICA,
-        REPLICATE,
-        REQUEST_MAX_CPU_TIME_SEC,
-        REQUEST_MAX_MEMORY_GRANT_PERCENT,
-        REQUEST_MEMORY_GRANT_TIMEOUT_SEC,
-        REQUIRED_SYNCHRONIZED_SECONDARIES_TO_COMMIT,
-        RESAMPLE,
-        RESERVE_DISK_SPACE,
-        RESOURCE,
-        RESOURCE_MANAGER_LOCATION,
-        RESTRICTED_USER,
-        RESUMABLE,
-        RETENTION,
-        REVERSE,
-        ROBUST,
-        ROOT,
-        ROUTE,
-        ROW,
-        ROW_NUMBER,
-        ROWGUID,
-        ROWLOCK,
-        ROWS,
-        RTRIM,
-        SAMPLE,
-        SCHEMA_ID,
-        SCHEMA_NAME,
-        SCHEMABINDING,
-        SCOPE_IDENTITY,
-        SCOPED,
-        SCROLL,
-        SCROLL_LOCKS,
-        SEARCH,
-        SECONDARY,
-        SECONDARY_ONLY,
-        SECONDARY_ROLE,
-        SECONDS,
-        SECRET,
-        SECURABLES,
-        SECURITY,
-        SECURITY_LOG,
-        SEEDING_MODE,
-        SELF,
-        SEMI_SENSITIVE,
-        SEND,
-        SENT,
-        SEQUENCE,
-        SEQUENCE_NUMBER,
-        SERIALIZABLE,
-        SERVERPROPERTY,
-        SERVICEBROKER,
-        SESSIONPROPERTY,
-        SESSION_TIMEOUT,
-        SETERROR,
-        SHARE,
-        SHARED,
-        SHOWCONTIG,
-        SHOWPLAN,
-        SHOWPLAN_ALL,
-        SHOWPLAN_TEXT,
-        SHOWPLAN_XML,
-        SIGNATURE,
-        SIMPLE,
-        SINGLE_USER,
-        SIZE,
-        SMALLINT,
-        SNAPSHOT,
-        SORT_IN_TEMPDB,
-        SOUNDEX,
-        SPACE_KEYWORD,
-        SPARSE,
-        SPATIAL_WINDOW_MAX_CELLS,
-        SQL_VARIANT_PROPERTY,
-        STANDBY,
-        START_DATE,
-        STATIC,
-        STATISTICS_INCREMENTAL,
-        STATISTICS_NORECOMPUTE,
-        STATS_DATE,
-        STATS_STREAM,
-        STATUS,
-        STATUSONLY,
-        STDEV,
-        STDEVP,
-        STOPLIST,
-        STR,
-        STRING_AGG,
-        STRING_ESCAPE,
-        STUFF,
-        SUBJECT,
-        SUBSCRIBE,
-        SUBSCRIPTION,
-        SUBSTRING,
-        SUM,
-        SUSER_ID,
-        SUSER_NAME,
-        SUSER_SID,
-        SUSER_SNAME,
-        SUSPEND,
-        SYMMETRIC,
-        SYNCHRONOUS_COMMIT,
-        SYNONYM,
-        SYSTEM,
-        TABLERESULTS,
-        TABLOCK,
-        TABLOCKX,
-        TAKE,
-        TARGET_RECOVERY_TIME,
-        TB,
-        TEXTIMAGE_ON,
-        THROW,
-        TIES,
-        TIME,
-        TIMEOUT,
-        TIMER,
-        TINYINT,
-        TORN_PAGE_DETECTION,
-        TRACKING,
-        TRANSACTION_ID,
-        TRANSFORM_NOISE_WORDS,
-        TRANSLATE,
-        TRIM,
-        TRIPLE_DES,
-        TRIPLE_DES_3KEY,
-        TRUSTWORTHY,
-        TRY,
-        TSQL,
-        TWO_DIGIT_YEAR_CUTOFF,
-        TYPE,
-        TYPE_ID,
-        TYPE_NAME,
-        TYPE_WARNING,
-        TYPEPROPERTY,
-        UNBOUNDED,
-        UNCOMMITTED,
-        UNICODE,
-        UNKNOWN,
-        UNLIMITED,
-        UNMASK,
-        UOW,
-        UPDLOCK,
-        UPPER,
-        USER_ID,
-        USER_NAME,
-        USING,
-        VALID_XML,
-        VALIDATION,
-        VALUE,
-        VALUE_SQUARE_BRACKET,
-        VAR,
-        VARBINARY_KEYWORD,
-        VARP,
-        VERIFY_CLONEDB,
-        VERSION,
-        VIEW_METADATA,
-        VIEWS,
-        WAIT,
-        WELL_FORMED_XML,
-        WITHOUT_ARRAY_WRAPPER,
-        WORK,
-        WORKLOAD,
-        XLOCK,
-        XML,
-        XML_COMPRESSION,
-        XMLDATA,
-        XMLNAMESPACES,
-        XMLSCHEMA,
-        XSINIL,
-        ZON,
-       ,
-        ABORT_AFTER_WAIT,
-        ABSENT,
-        ADMINISTER,
-        AES,
-        ALLOW_CONNECTIONS,
-        ALLOW_MULTIPLE_EVENT_LOSS,
-        ALLOW_SINGLE_EVENT_LOSS,
-        ANONYMOUS,
-        APPEND,
-        APPLICATION,
-        ASYMMETRIC,
-        ASYNCHRONOUS_COMMIT,
-        AUTHENTICATE,
-        AUTHENTICATION,
-        AUTOMATED_BACKUP_PREFERENCE,
-        AUTOMATIC,
-        AVAILABILITY_MODE,
-        BEFORE,
-        BLOCK,
-        BLOCKERS,
-        BLOCKSIZE,
-        BLOCKING_HIERARCHY,
-        BUFFER,
-        BUFFERCOUNT,
-        CACHE,
-        CALLED,
-        CERTIFICATE,
-        CHANGETABLE,
-        CHANGES,
-        CHECK_POLICY,
-        CHECK_EXPIRATION,
-        CLASSIFIER_FUNCTION,
-        CLUSTER,
-        COMPRESS,
-        COMPRESSION,
-        CONNECT,
-        CONNECTION,
-        CONFIGURATION,
-        CONNECTIONPROPERTY,
-        CONTAINMENT,
-        CONTEXT,
-        CONTEXT_INFO,
-        CONTINUE_AFTER_ERROR,
-        CONTRACT,
-        CONTRACT_NAME,
-        CONVERSATION,
-        COPY_ONLY,
-        CURRENT_REQUEST_ID,
-        CURRENT_TRANSACTION_ID,
-        CYCLE,
-        DATA_COMPRESSION,
-        DATA_SOURCE,
-        DATABASE_MIRRORING,
-        DATASPACE,
-        DDL,
-        DECOMPRESS,
-        DEFAULT_DATABASE,
-        DEFAULT_SCHEMA,
-        DIAGNOSTICS,
-        DIFFERENTIAL,
-        DISTRIBUTION,
-        DTC_SUPPORT,
-        ENABLED,
-        ENDPOINT,
-        ERROR,
-        ERROR_LINE,
-        ERROR_MESSAGE,
-        ERROR_NUMBER,
-        ERROR_PROCEDURE,
-        ERROR_SEVERITY,
-        ERROR_STATE,
-        EVENT,
-        EVENTDATA,
-        EVENT_RETENTION_MODE,
-        EXECUTABLE_FILE,
-        EXPIREDATE,
-        EXTENSION,
-        EXTERNAL_ACCESS,
-        FAILOVER,
-        FAILURECONDITIONLEVEL,
-        FAN_IN,
-        FILE_SNAPSHOT,
-        FORCESEEK,
-        FORCE_SERVICE_ALLOW_DATA_LOSS,
-        FORMATMESSAGE,
-        GET,
-        GET_FILESTREAM_TRANSACTION_CONTEXT,
-        GETANCESTOR,
-        GETANSINULL,
-        GETDESCENDANT,
-        GETLEVEL,
-        GETREPARENTEDVALUE,
-        GETROOT,
-        GOVERNOR,
-        HASHED,
-        HEALTHCHECKTIMEOUT,
-        HEAP,
-        HIERARCHYID,
-        HOST_ID,
-        HOST_NAME,
-        IIF,
-        IO,
-        INCLUDE,
-        INCREMENT,
-        INFINITE,
-        INIT,
-        INSTEAD,
-        ISDESCENDANTOF,
-        ISNULL,
-        ISNUMERIC,
-        KERBEROS,
-        KEY_PATH,
-        KEY_STORE_PROVIDER_NAME,
-        LANGUAGE,
-        LIBRARY,
-        LIFETIME,
-        LINKED,
-        LINUX,
-        LISTENER_IP,
-        LISTENER_PORT,
-        LOCAL_SERVICE_NAME,
-        LOG,
-        MASK,
-        MATCHED,
-        MASTER,
-        MAX_MEMORY,
-        MAXTRANSFER,
-        MAXVALUE,
-        MAX_DISPATCH_LATENCY,
-        MAX_DURATION,
-        MAX_EVENT_SIZE,
-        MAX_SIZE,
-        MAX_OUTSTANDING_IO_PER_VOLUME,
-        MEDIADESCRIPTION,
-        MEDIANAME,
-        MEMBER,
-        MEMORY_PARTITION_MODE,
-        MESSAGE_FORWARDING,
-        MESSAGE_FORWARD_SIZE,
-        MINVALUE,
-        MIRROR,
-        MUST_CHANGE,
-        NEWID,
-        NEWSEQUENTIALID,
-        NOFORMAT,
-        NOINIT,
-        NONE,
-        NOREWIND,
-        NOSKIP,
-        NOUNLOAD,
-        NO_CHECKSUM,
-        NO_COMPRESSION,
-        NO_EVENT_LOSS,
-        NOTIFICATION,
-        NTLM,
-        OLD_PASSWORD,
-        ON_FAILURE,
-        OPERATIONS,
-        PAGE,
-        PARAM_NODE,
-        PARTIAL,
-        PASSWORD,
-        PERMISSION_SET,
-        PER_CPU,
-        PER_DB,
-        PER_NODE,
-        PERSISTED,
-        PLATFORM,
-        POLICY,
-        PREDICATE,
-        PROCESS,
-        PROFILE,
-        PYTHON,
-        R,
-        READ_WRITE_FILEGROUPS,
-        REGENERATE,
-        RELATED_CONVERSATION,
-        RELATED_CONVERSATION_GROUP,
-        REQUIRED,
-        RESET,
-        RESOURCES,
-        RESTART,
-        RESUME,
-        RETAINDAYS,
-        RETURNS,
-        REWIND,
-        ROLE,
-        ROUND_ROBIN,
-        ROWCOUNT_BIG,
-        RSA_512,
-        RSA_1024,
-        RSA_2048,
-        RSA_3072,
-        RSA_4096,
-        SAFETY,
-        SAFE,
-        SCHEDULER,
-        SCHEME,
-        SCRIPT,
-        SERVER,
-        SERVICE,
-        SERVICE_BROKER,
-        SERVICE_NAME,
-        SESSION,
-        SESSION_CONTEXT,
-        SETTINGS,
-        SHRINKLOG,
-        SID,
-        SKIP_KEYWORD,
-        SOFTNUMA,
-        SOURCE,
-        SPECIFICATION,
-        SPLIT,
-        SQL,
-        SQLDUMPERFLAGS,
-        SQLDUMPERPATH,
-        SQLDUMPERTIMEOUT,
-        STATE,
-        STATS,
-        START,
-        STARTED,
-        STARTUP_STATE,
-        STOP,
-        STOPPED,
-        STOP_ON_ERROR,
-        SUPPORTED,
-        SWITCH,
-        TAPE,
-        TARGET,
-        TCP,
-        TOSTRING,
-        TRACE,
-        TRACK_CAUSALITY,
-        TRANSFER,
-        UNCHECKED,
-        UNLOCK,
-        UNSAFE,
-        URL,
-        USED,
-        VERBOSELOGGING,
-        VISIBILITY,
-        WAIT_AT_LOW_PRIORITY,
-        WINDOWS,
-        WITHOUT,
-        WITNESS,
-        XACT_ABORT,
-        XACT_STAT,
-       ,
-        ABS,
-        ACOS,
-        ASIN,
-        ATAN,
-        ATN2,
-        CEILING,
-        COS,
-        COT,
-        DEGREES,
-        EXP,
-        FLOOR,
-        LOG10,
-        PI,
-        POWER,
-        RADIANS,
-        RAND,
-        ROUND,
-        SIGN,
-        SIN,
-        SQRT,
-        SQUARE,
-        TA,
-       ,
-        CURRENT_TIMEZONE,
-        CURRENT_TIMEZONE_ID,
-        DATE_BUCKET,
-        DATEDIFF_BIG,
-        DATEFROMPARTS,
-        DATETIME2FROMPARTS,
-        DATETIMEFROMPARTS,
-        DATETIMEOFFSETFROMPARTS,
-        DATETRUNC,
-        DAY,
-        EOMONTH,
-        ISDATE,
-        MONTH,
-        SMALLDATETIMEFROMPARTS,
-        SWITCHOFFSET,
-        SYSDATETIME,
-        SYSDATETIMEOFFSET,
-        SYSUTCDATETIME,
-        TIMEFROMPARTS,
-        TODATETIMEOFFSET,
-        YEA,
-       ,
-        QUARTER,
-        DAYOFYEAR,
-        WEEK,
-        HOUR,
-        MINUTE,
-        SECOND,
-        MILLISECOND,
-        MICROSECOND,
-        NANOSECOND,
-        TZOFFSET,
-        ISO_WEEK,
-        WEEKDA,
-       ,
-        YEAR_ABBR,
-        QUARTER_ABBR,
-        MONTH_ABBR,
-        DAYOFYEAR_ABBR,
-        DAY_ABBR,
-        WEEK_ABBR,
-        HOUR_ABBR,
-        MINUTE_ABBR,
-        SECOND_ABBR,
-        MILLISECOND_ABBR,
-        MICROSECOND_ABBR,
-        NANOSECOND_ABBR,
-        TZOFFSET_ABBR,
-        ISO_WEEK_ABBR,
-        WEEKDAY_ABB,
-       ,
-        SP_EXECUTESQ,
-       ,
-        VARCHAR,
-        NVARCHAR,
-        PRECISION,
-        FILESTREAM_O,
-    ),
-
-    // https://msdn.microsoft.com/en-us/library/ms175874.aspx
-    id_: $ => choice(
-        ID,
-        TEMP_ID,
-        DOUBLE_QUOTE_ID,
-        DOUBLE_QUOTE_BLANK,
-        SQUARE_BRACKET_ID,
-        $.keyword,
-        RA,
-    ),
-
-    simple_id: $ => (
-        I,
-    ),
-
-    id_or_string: $ => choice(
-        $.id_,
-        STRIN,
-    ),
-
-    // https://msdn.microsoft.com/en-us/library/ms188074.aspx
-    // Spaces are allowed for comparison operators.
-    comparison_operator: $ => choice(
-        '=',
-        '>',
-        '<',
-        seq('<', '='),
-        seq('>', '='),
-        seq('<', '>'),
-        seq('!', '='),
-        seq('!', '>'),
-        seq('!', '<'),
-    ),
-
-    assignment_operator: $ => choice(
-        '+=',
-        '-=',
-        '*=',
-        '/=',
-        '%=',
-        '&=',
-        '^=',
-        '|=',
-    ),
-
-    file_size: $ => (
-            seq(DECIMAL, optional(choice(seq(KB, MB, GB, TB, '%'),))),
-    ),
-
-    // ***************************************************************************************************************
-
-    table_source_item: $ => choice(
-      seq($.full_table_name, $.deprecated_table_hint, $.as_table_alias), // this is currently allowed
-      seq(
-        $.full_table_name,
-        optional($.as_table_alias),
-        optional(choice($.with_table_hints, $.deprecated_table_hint, $.sybase_legacy_hints))
-      ),
-      seq($.rowset_function, optional($.as_table_alias)),
-      seq('(', $.derived_table, ')', optional(seq($.as_table_alias, optional($.column_alias_list)))),
-      seq($.change_table, optional($.as_table_alias)),
-      seq($.nodes_method, optional($.as_table_alias, optional(column_alias_list))),
-      seq($.function_call, optional($.as_table_alias, optional(column_alias_list))),
-      seq(field("loc_id", LOCAL_ID), optional($.as_table_alias)),
-      seq(field("loc_id_call", LOCAL_ID), '.', field("loc_fcall", $.function_call), optional(seq($.as_table_alias, optional($.column_alias_list)))),
-      $.open_xml,
-      $.open_json,
-      seq(DOUBLE_COLON, field("oldstyle_fcall", $.function_call), optional($.as_table_alias)), // Build-in function (old syntax)
-      seq('(', $.table_source, ')'),
-    ),
-
-    open_xml: $ => seq(
-      OPENXML,
-      '(',
+  open_xml: $ => seq(
+    OPENXML,
+    '(',
       $.expression,
       ',',
       $.expression,
       optional(seq(',', $.expression)),
       ')',
-      optional(seq(
-        WITH,
-        '(',
+    optional(seq(
+      WITH,
+      '(',
         $.schema_declaration,
         ')'
-      )),
-      optional($.as_table_alias)
-    ),
+    )),
+    optional($.as_table_alias)
+  ),
 
-    open_json: $ => seq(
-      OPENJSON,
-      '(',
+  open_json: $ => seq(
+    OPENJSON,
+    '(',
       $.expression,
       optional(seq(',', $.expression)),
       ')',
-      optional(seq(
-        WITH,
-        '(',
+    optional(seq(
+      WITH,
+      '(',
         $.json_declaration,
         ')'
-      )),
-      optional($.as_table_alias)
-    ),
+    )),
+    optional($.as_table_alias)
+  ),
 
-    json_declaration: $ => seq(
-      field("json_col", $.json_column_declaration),
-      repeat(seq(',', field("json_col", $.json_column_declaration)))
-    ),
+  json_declaration: $ => seq(
+    field("json_col", $.json_column_declaration),
+    repeat(seq(',', field("json_col", $.json_column_declaration)))
+  ),
 
-    json_column_declaration: $ => seq(
-      $.column_declaration,
-      optional(seq(AS, JSON))
-    ),
+  json_column_declaration: $ => seq(
+    $.column_declaration,
+    optional(seq(AS, JSON))
+  ),
 
-    schema_declaration: $ => seq(
-      field("xml_col", $.column_declaration),
-      repeat(seq(',', field("xml_col", $.column_declaration)))
-    ),
+  schema_declaration: $ => seq(
+    field("xml_col", $.column_declaration),
+    repeat(seq(',', field("xml_col", $.column_declaration)))
+  ),
 
-    column_declaration: $ => seq(
-      $.id_,
-      $.data_type,
-      optional(STRING)
-    ),
+  column_declaration: $ => seq(
+    $.id_,
+    $.data_type,
+    optional(STRING)
+  ),
 
-    change_table: $ => choice(
-      $.change_table_changes,
-      $.change_table_version
-    ),
+  change_table: $ => choice(
+    $.change_table_changes,
+    $.change_table_version
+  ),
 
-    change_table_changes: $ => seq(
-      CHANGETABLE,
-      '(',
+  change_table_changes: $ => seq(
+    CHANGETABLE,
+    '(',
       CHANGES,
       field("changetable", $.table_name),
       ',',
       field("changesid", choice(NULL_, DECIMAL, LOCAL_ID)),
       ')'
-    ),
+  ),
 
-    change_table_version: $ => seq(
-      CHANGETABLE,
-      '(',
+  change_table_version: $ => seq(
+    CHANGETABLE,
+    '(',
       VERSION,
       field("versiontable", $.table_name),
       ',',
@@ -3185,97 +3185,97 @@ module.exports = {
       ',',
       field("pk_values", $.select_list),
       ')'
-    ),
+  ),
 
-    // https://msdn.microsoft.com/en-us/library/ms191472.aspx
-    join_part: $ => choice(
-      $.join_on,
-      $.cross_join,
-      $.apply_,
-      $.pivot,
-      $.unpivot
-    ),
+  // https://msdn.microsoft.com/en-us/library/ms191472.aspx
+join_part: $ => choice(
+  $.join_on,
+  $.cross_join,
+  $.apply_,
+  $.pivot,
+  $.unpivot
+),
 
-    join_on: $ => seq(
-      optional(choice(
-        field("inner", INNER),
-        seq(
-          field("join_type", choice(LEFT, RIGHT, FULL)),
-          optional(field("outer", OUTER))
-        )
-      )),
-      optional(field("join_hint", choice(LOOP, HASH, MERGE, REMOTE))),
-      JOIN,
-      field("source", $.table_source),
-      ON,
-      field("cond", $.search_condition)
-    ),
+  join_on: $ => seq(
+    optional(choice(
+      field("inner", INNER),
+      seq(
+        field("join_type", choice(LEFT, RIGHT, FULL)),
+        optional(field("outer", OUTER))
+      )
+    )),
+    optional(field("join_hint", choice(LOOP, HASH, MERGE, REMOTE))),
+    JOIN,
+    field("source", $.table_source),
+    ON,
+    field("cond", $.search_condition)
+  ),
 
-    cross_join: $ => seq(
-      CROSS,
-      JOIN,
-      $.table_source_item
-    ),
+  cross_join: $ => seq(
+    CROSS,
+    JOIN,
+    $.table_source_item
+  ),
 
-    apply_: $ => seq(
-      field("apply_style", choice(CROSS, OUTER)),
-      APPLY,
-      field("source", $.table_source_item)
-    ),
+  apply_: $ => seq(
+    field("apply_style", choice(CROSS, OUTER)),
+    APPLY,
+    field("source", $.table_source_item)
+  ),
 
-    pivot: $ => seq(
-      PIVOT,
-      $.pivot_clause,
-      optional($.as_table_alias)
-    ),
+  pivot: $ => seq(
+    PIVOT,
+    $.pivot_clause,
+    optional($.as_table_alias)
+  ),
 
-    unpivot: $ => seq(
-      UNPIVOT,
-      $.unpivot_clause,
-      optional($.as_table_alias)
-    ),
+  unpivot: $ => seq(
+    UNPIVOT,
+    $.unpivot_clause,
+    optional($.as_table_alias)
+  ),
 
-    pivot_clause: $ => seq(
-      '(',
+  pivot_clause: $ => seq(
+    '(',
       $.aggregate_windowed_function,
       FOR,
       $.full_column_name,
       IN,
       $.column_alias_list,
       ')'
-    ),
+  ),
 
-    unpivot_clause: $ => seq(
-      '(',
+  unpivot_clause: $ => seq(
+    '(',
       field("unpivot_exp", $.expression),
       FOR,
       $.full_column_name,
       IN,
       '(',
-      $.full_column_name_list,
-      ')',
+        $.full_column_name_list,
+        ')',
       ')'
-    ),
+  ),
 
-    full_column_name_list: $ => seq(
-      field("column", $.full_column_name),
-      repeat(seq(',', field("column", $.full_column_name)))
-    ),
+  full_column_name_list: $ => seq(
+    field("column", $.full_column_name),
+    repeat(seq(',', field("column", $.full_column_name)))
+  ),
 
-    rowset_function: $ => choice(
-      seq(
-        OPENROWSET,
-        '(',
+  rowset_function: $ => choice(
+    seq(
+      OPENROWSET,
+      '(',
         field("provider_name", STRING),
         ',',
         field("connection_string", STRING),
         ',',
         field("sql", STRING),
         ')'
-      ),
-      seq(
-        OPENROWSET,
-        '(',
+    ),
+    seq(
+      OPENROWSET,
+      '(',
         BULK,
         field("data_file", STRING),
         ',',
@@ -3284,47 +3284,47 @@ module.exports = {
           $.id_
         ),
         ')'
-      )
-    ),
+    )
+  ),
 
-    bulk_option: $ => seq(
-      $.id_,
-      '=',
-      field("bulk_option_value", choice(DECIMAL, STRING))
-    ),
+  bulk_option: $ => seq(
+    $.id_,
+    '=',
+    field("bulk_option_value", choice(DECIMAL, STRING))
+  ),
 
-    derived_table: $ => choice(
-      $.subquery,
-      seq('(', $.subquery, repeat(seq(UNION, ALL, $.subquery)), ')'),
-      $.table_value_constructor,
-      seq('(', $.table_value_constructor, ')')
-    ),
+  derived_table: $ => choice(
+    $.subquery,
+    seq('(', $.subquery, repeat(seq(UNION, ALL, $.subquery)), ')'),
+    $.table_value_constructor,
+    seq('(', $.table_value_constructor, ')')
+  ),
 
-    function_call: $ => choice(
-      $.ranking_windowed_function,
-      $.aggregate_windowed_function,
-      $.analytic_windowed_function,
-      $.built_in_functions,
-      seq($.scalar_function_name, '(', optional($.expression_list_), ')'),
-      $.freetext_function,
-      $.partition_function,
-      $.hierarchyid_static_method,
-    ),
+  function_call: $ => choice(
+    $.ranking_windowed_function,
+    $.aggregate_windowed_function,
+    $.analytic_windowed_function,
+    $.built_in_functions,
+    seq($.scalar_function_name, '(', optional($.expression_list_), ')'),
+    $.freetext_function,
+    $.partition_function,
+    $.hierarchyid_static_method,
+  ),
 
-    partition_function: $ => seq(
-      optional(seq(field("database", $.id_), '.')),
-      $.DOLLAR_PARTITION,
-      '.',
-      field("func_name", $.id_),
-      '(',
+  partition_function: $ => seq(
+    optional(seq(field("database", $.id_), '.')),
+    $.DOLLAR_PARTITION,
+    '.',
+    field("func_name", $.id_),
+    '(',
       $.expression,
       ')'
-    ),
+  ),
 
-    freetext_function: $ => choice(
-      seq(
-        choice(CONTAINSTABLE, FREETEXTTABLE),
-        '(',
+  freetext_function: $ => choice(
+    seq(
+      choice(CONTAINSTABLE, FREETEXTTABLE),
+      '(',
         $.table_name,
         ',',
         choice(
@@ -3337,10 +3337,10 @@ module.exports = {
         optional(seq(',', LANGUAGE, $.expression)),
         optional(seq(',', $.expression)),
         ')'
-      ),
-      seq(
-        choice(SEMANTICSIMILARITYTABLE, SEMANTICKEYPHRASETABLE),
-        '(',
+    ),
+    seq(
+      choice(SEMANTICSIMILARITYTABLE, SEMANTICKEYPHRASETABLE),
+      '(',
         $.table_name,
         ',',
         choice(
@@ -3351,10 +3351,10 @@ module.exports = {
         ',',
         $.expression,
         ')'
-      ),
-      seq(
-        SEMANTICSIMILARITYDETAILSTABLE,
-        '(',
+    ),
+    seq(
+      SEMANTICSIMILARITYDETAILSTABLE,
+      '(',
         $.table_name,
         ',',
         $.full_column_name,
@@ -3365,13 +3365,13 @@ module.exports = {
         ',',
         $.expression,
         ')'
-      )
-    ),
+    )
+  ),
 
-    freetext_predicate: $ => choice(
-      seq(
-        CONTAINS,
-        '(',
+  freetext_predicate: $ => choice(
+    seq(
+      CONTAINS,
+      '(',
         choice(
           $.full_column_name,
           seq('(', $.full_column_name, repeat(seq(',', $.full_column_name)), ')'),
@@ -3381,10 +3381,10 @@ module.exports = {
         ',',
         $.expression,
         ')'
-      ),
-      seq(
-        FREETEXT,
-        '(',
+    ),
+    seq(
+      FREETEXT,
+      '(',
         $.table_name,
         ",",
         choice(
@@ -3396,2096 +3396,2096 @@ module.exports = {
         $.expression,
         optional(seq(',', LANGUAGE, $.expression)),
         ')'
-      ),
     ),
+  ),
 
-    json_key_value: $ => seq(
-      field("json_key_name", $.expression),
-      ":",
-      field("value_expression", $.expression),
+  json_key_value: $ => seq(
+    field("json_key_name", $.expression),
+    ":",
+    field("value_expression", $.expression),
+  ),
+
+  json_null_clause: $ => seq(
+    choice(ABSENT, NULL_), ON, NULL_
+  ),
+
+  built_in_functions: $ => choice(
+    // Metadata functions
+    seq(APP_NAME, '(', ')'),
+    seq(APPLOCK_MODE, '(', field("database_principal", $.expression), ',', field("resource_name", $.expression), ',', field("lock_owner", $.expression), ')'),
+    seq(APPLOCK_TEST, '(', field("database_principal", $.expression), ',', field("resource_name", $.expression), ',', field("lock_mode", $.expression), ',', field("lock_owner", $.expression), ')'),
+    seq(ASSEMBLYPROPERTY, '(', field("assembly_name", $.expression), ',', field("property_name", $.expression), ')'),
+    seq(COL_LENGTH, '(', field("table", $.expression), ',', field("column", $.expression), ')'),
+    seq(COL_NAME, '(', field("table_id", $.expression), ',', field("column_id", $.expression), ')'),
+    seq(COLUMNPROPERTY, '(', field("id", $.expression), ',', field("column", $.expression), ',', field("property", $.expression), ')'),
+    seq(DATABASEPROPERTYEX, '(', field("database", $.expression), ',', field("property", $.expression), ')'),
+    seq(DB_ID, '(', optional(field("database_name", $.expression)), ')'),
+    seq(DB_NAME, '(', optional(field("database_id", $.expression)), ')'),
+    seq(FILE_ID, '(', field("file_name", $.expression), ')'),
+    seq(FILE_IDEX, '(', field("file_name", $.expression), ')'),
+    seq(FILE_NAME, '(', field("file_id", $.expression), ')'),
+    seq(FILEGROUP_ID, '(', field("filegroup_name", $.expression), ')'),
+    seq(FILEGROUP_NAME, '(', field("filegroup_id", $.expression), ')'),
+    seq(FILEGROUPPROPERTY, '(', field("filegroup_name", $.expression), ',', field("property", $.expression), ')'),
+    seq(FILEPROPERTY, '(', field("file_name", $.expression), ',', field("property", $.expression), ')'),
+    seq(FILEPROPERTYEX, '(', field("name", $.expression), ',', field("property", $.expression), ')'),
+    seq(FULLTEXTCATALOGPROPERTY, '(', field("catalog_name", $.expression), ',', field("property", $.expression), ')'),
+    seq(FULLTEXTSERVICEPROPERTY, '(', field("property", $.expression), ')'),
+    seq(INDEX_COL, '(', field("table_or_view_name", $.expression), ',', field("index_id", $.expression), ',', field("key_id", $.expression), ')'),
+    seq(INDEXKEY_PROPERTY, '(', field("object_id", $.expression), ',', field("index_id", $.expression), ',', field("key_id", $.expression), ',', field("property", $.expression), ')'),
+    seq(INDEXPROPERTY, '(', field("object_id", $.expression), ',', field("index_or_statistics_name", $.expression), ',', field("property", $.expression), ')'),
+    seq(NEXT, VALUE, FOR, field("sequence_name", $.table_name), optional(seq(OVER, '(', $.order_by_clause, ')'))),
+    seq(OBJECT_DEFINITION, '(', field("object_id", $.expression), ')'),
+    seq(OBJECT_ID, '(', field("object_name", $.expression), optional(seq(',', field("object_type", $.expression))), ')'),
+    seq(OBJECT_NAME, '(', field("object_id", $.expression), optional(seq(',', field("database_id", $.expression))), ')'),
+    seq(OBJECT_SCHEMA_NAME, '(', field("object_id", $.expression), optional(seq(',', field("database_id", $.expression))), ')'),
+    seq(OBJECTPROPERTY, '(', field("id", $.expression), ',', field("property", $.expression), ')'),
+    seq(OBJECTPROPERTYEX, '(', field("id", $.expression), ',', field("property", $.expression), ')'),
+    seq(ORIGINAL_DB_NAME, '(', ')'),
+    seq(PARSENAME, '(', field("object_name", $.expression), ',', field("object_piece", $.expression), ')'),
+    seq(SCHEMA_ID, '(', optional(field("schema_name", $.expression)), ')'),
+    seq(SCHEMA_NAME, '(', optional(field("schema_id", $.expression)), ')'),
+    seq(SCOPE_IDENTITY, '(', ')'),
+    seq(SERVERPROPERTY, '(', field("property", $.expression), ')'),
+    seq(STATS_DATE, '(', field("object_id", $.expression), ',', field("stats_id", $.expression), ')'),
+    seq(TYPE_ID, '(', field("type_name", $.expression), ')'),
+    seq(TYPE_NAME, '(', field("type_id", $.expression), ')'),
+    seq(TYPEPROPERTY, '(', field("type", $.expression), ',', field("property", $.expression), ')'),
+
+    // String functions
+    seq(ASCII, '(', field("character_expression", $.expression), ')'),
+    seq(CHAR, '(', field("integer_expression", $.expression), ')'),
+    seq(CHARINDEX, '(', field("expressionToFind", $.expression), ',', field("expressionToSearch", $.expression), optional(seq(',', field("start_location", $.expression))), ')'),
+    seq(CONCAT, '(', field("string_value_1", $.expression), ',', field("string_value_2", $.expression), repeat(seq(',', field("string_value_n", $.expression))), ')'),
+    seq(CONCAT_WS, '(', field("separator", $.expression), ',', field("argument_1", $.expression), ',', field("argument_2", $.expression), repeat(seq(',', field("argument_n", $.expression))), ')'),
+    seq(DIFFERENCE, '(', field("character_expression_1", $.expression), ',', field("character_expression_2", $.expression), ')'),
+    seq(FORMAT, '(', field("value", $.expression), ',', field("format", $.expression), optional(seq(',', field("culture", $.expression))), ')'),
+    seq(LEFT, '(', field("character_expression", $.expression), ',', field("integer_expression", $.expression), ')'),
+    seq(LEN, '(', field("string_expression", $.expression), ')'),
+    seq(LOWER, '(', field("character_expression", $.expression), ')'),
+    seq(LTRIM, '(', field("character_expression", $.expression), ')'),
+    seq(NCHAR, '(', field("integer_expression", $.expression), ')'),
+    seq(PATINDEX, '(', field("pattern", $.expression), ',', field("string_expression", $.expression), ')'),
+    seq(QUOTENAME, '(', field("character_string", $.expression), optional(seq(',', field("quote_character", $.expression))), ')'),
+    seq(REPLACE, '(', field("input", $.expression), ',', field("replacing", $.expression), ',', field("with", $.expression), ')'),
+    seq(REPLICATE, '(', field("string_expression", $.expression), ',', field("integer_expression", $.expression), ')'),
+    seq(REVERSE, '(', field("string_expression", $.expression), ')'),
+    seq(RIGHT, '(', field("character_expression", $.expression), ',', field("integer_expression", $.expression), ')'),
+    seq(RTRIM, '(', field("character_expression", $.expression), ')'),
+    seq(SOUNDEX, '(', field("character_expression", $.expression), ')'),
+    seq(SPACE_KEYWORD, '(', field("integer_expression", $.expression), ')'),
+    seq(STR, '(', field("float_expression", $.expression), optional(seq(',', field("length_expression", $.expression), optional(seq(',', field("decimal", $.expression))))), ')'),
+    seq(STRING_AGG, '(', field("expr", $.expression), ',', field("separator", $.expression), ')', optional(seq(WITHIN, GROUP, '(', $.order_by_clause, ')'))),
+    seq(STRING_ESCAPE, '(', field("text_", $.expression), ',', field("type_", $.expression), ')'),
+    seq(STUFF, '(', field("str", $.expression), ',', field("from", $.expression), ',', field("to", $.expression), ',', field("str_with", $.expression), ')'),
+    seq(SUBSTRING, '(', field("string_expression", $.expression), ',', field("start_", $.expression), ',', field("length", $.expression), ')'),
+    seq(TRANSLATE, '(', field("inputString", $.expression), ',', field("characters", $.expression), ',', field("translations", $.expression), ')'),
+    seq(TRIM, '(', optional(seq(field("characters", $.expression), FROM)), field("string_", $.expression), ')'),
+    seq(UNICODE, '(', field("ncharacter_expression", $.expression), ')'),
+    seq(UPPER, '(', field("character_expression", $.expression), ')'),
+
+    // System functions
+    seq(BINARY_CHECKSUM, '(', choice('*', seq($.expression, repeat(seq(',', $.expression)))), ')'),
+    seq(CHECKSUM, '(', choice('*', seq($.expression, repeat(seq(',', $.expression)))), ')'),
+    seq(COMPRESS, '(', field("expr", $.expression), ')'),
+    seq(CONNECTIONPROPERTY, '(', field("property", STRING), ')'),
+    seq(CONTEXT_INFO, '(', ')'),
+    seq(CURRENT_REQUEST_ID, '(', ')'),
+    seq(CURRENT_TRANSACTION_ID, '(', ')'),
+    seq(DECOMPRESS, '(', field("expr", $.expression), ')'),
+    seq(ERROR_LINE, '(', ')'),
+    seq(ERROR_MESSAGE, '(', ')'),
+    seq(ERROR_NUMBER, '(', ')'),
+    seq(ERROR_PROCEDURE, '(', ')'),
+    seq(ERROR_SEVERITY, '(', ')'),
+    seq(ERROR_STATE, '(', ')'),
+    seq(FORMATMESSAGE, '(', choice(field("msg_number", DECIMAL), field("msg_string", STRING), field("msg_variable", LOCAL_ID)), ',', $.expression, repeat(seq(',', $.expression)), ')'),
+    seq(GET_FILESTREAM_TRANSACTION_CONTEXT, '(', ')'),
+    seq(GETANSINULL, '(', optional(field("database", STRING)), ')'),
+    seq(HOST_ID, '(', ')'),
+    seq(HOST_NAME, '(', ')'),
+    seq(ISNULL, '(', field("left", $.expression), ',', field("right", $.expression), ')'),
+    seq(ISNUMERIC, '(', $.expression, ')'),
+    seq(MIN_ACTIVE_ROWVERSION, '(', ')'),
+    seq(NEWID, '(', ')'),
+    seq(NEWSEQUENTIALID, '(', ')'),
+    seq(ROWCOUNT_BIG, '(', ')'),
+    seq(SESSION_CONTEXT, '(', field("key", STRING), ')'),
+    seq(XACT_STATE, '(', ')'),
+    seq(CAST, '(', $.expression, AS, $.data_type, ')'),
+    seq(TRY_CAST, '(', $.expression, AS, $.data_type, ')'),
+    seq(CONVERT, '(', field("convert_data_type", $.data_type), ',', field("convert_expression", $.expression), optional(seq(',', field("style", $.expression))), ')'),
+    seq(COALESCE, '(', $.expression_list_, ')'),
+
+    // Cursor functions
+    CURSOR_ROWS,
+    FETCH_STATUS,
+    seq(CURSOR_STATUS, '(', field("scope", STRING), ',', field("cursor", $.expression), ')'),
+
+    // Cryptographic functions
+    seq(CERT_ID, '(', field("cert_name", $.expression), ')'),
+
+    // Data type functions
+    seq(DATALENGTH, '(', $.expression, ')'),
+    seq(IDENT_CURRENT, '(', field("table_or_view", $.expression), ')'),
+    seq(IDENT_INCR, '(', field("table_or_view", $.expression), ')'),
+    seq(IDENT_SEED, '(', field("table_or_view", $.expression), ')'),
+    seq(IDENTITY, '(', field("datatype", $.data_type), optional(seq(',', field("seed", DECIMAL), ',', field("increment", DECIMAL))), ')'),
+    seq(SQL_VARIANT_PROPERTY, '(', field("expr", $.expression), ',', field("property", STRING), ')'),
+
+    // Date functions
+    seq(CURRENT_DATE, '(', ')'),
+    CURRENT_TIMESTAMP,
+    seq(CURRENT_TIMEZONE, '(', ')'),
+    seq(CURRENT_TIMEZONE_ID, '(', ')'),
+    seq(DATE_BUCKET, '(', field("datepart", $.dateparts_9), ',', field("number", $.expression), ',', field("date", $.expression), optional(seq(',', field("origin", $.expression))), ')'),
+    seq(DATEADD, '(', field("datepart", $.dateparts_12), ',', field("number", $.expression), ',', field("date", $.expression), ')'),
+    seq(DATEDIFF, '(', field("datepart", $.dateparts_12), ',', field("date_first", $.expression), ',', field("date_second", $.expression), ')'),
+    seq(DATEDIFF_BIG, '(', field("datepart", $.dateparts_12), ',', field("startdate", $.expression), ',', field("enddate", $.expression), ')'),
+    seq(DATEFROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ')'),
+    seq(DATENAME, '(', field("datepart", $.dateparts_15), ',', field("date", $.expression), ')'),
+    seq(DATEPART, '(', field("datepart", $.dateparts_15), ',', field("date", $.expression), ')'),
+    seq(DATETIME2FROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ',', field("hour", $.expression), ',', field("minute", $.expression), ',', field("seconds", $.expression), ',', field("fractions", $.expression), ',', field("precision", $.expression), ')'),
+    seq(DATETIMEFROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ',', field("hour", $.expression), ',', field("minute", $.expression), ',', field("seconds", $.expression), ',', field("milliseconds", $.expression), ')'),
+    seq(DATETIMEOFFSETFROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ',', field("hour", $.expression), ',', field("minute", $.expression), ',', field("seconds", $.expression), ',', field("fractions", $.expression), ',', field("hour_offset", $.expression), ',', field("minute_offset", $.expression), ',', field("precision", DECIMAL), ')'),
+    seq(DATETRUNC, '(', field("datepart", $.dateparts_datetrunc), ',', field("date", $.expression), ')'),
+    seq(DAY, '(', field("date", $.expression), ')'),
+    seq(EOMONTH, '(', field("start_date", $.expression), optional(seq(',', field("month_to_add", $.expression))), ')'),
+    seq(GETDATE, '(', ')'),
+    seq(GETUTCDATE, '(', ')'),
+    seq(ISDATE, '(', $.expression, ')'),
+    seq(MONTH, '(', field("date", $.expression), ')'),
+    seq(SMALLDATETIMEFROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ',', field("hour", $.expression), ',', field("minute", $.expression), ')'),
+    seq(SWITCHOFFSET, '(', field("datetimeoffset_expression", $.expression), ',', field("timezoneoffset_expression", $.expression), ')'),
+    seq(SYSDATETIME, '(', ')'),
+    seq(SYSDATETIMEOFFSET, '(', ')'),
+    seq(SYSUTCDATETIME, '(', ')'),
+    seq(TIMEFROMPARTS, '(', field("hour", $.expression), ',', field("minute", $.expression), ',', field("seconds", $.expression), ',', field("fractions", $.expression), ',', field("precision", DECIMAL), ')'),
+    seq(TODATETIMEOFFSET, '(', field("datetime_expression", $.expression), ',', field("timezoneoffset_expression", $.expression), ')'),
+    seq(YEAR, '(', field("date", $.expression), ')'),
+    seq(IDENTITY, '(', field("data_type", $.data_type), optional(seq(',', field("seed", DECIMAL))), optional(seq(',', field("increment", DECIMAL))), ')'),
+    seq(NULLIF, '(', field("left", $.expression), ',', field("right", $.expression), ')'),
+    seq(PARSE, '(', field("str", $.expression), AS, $.data_type, optional(seq(USING, field("culture", $.expression))), ')'),
+    $.xml_data_type_methods,
+    seq(IIF, '(', field("cond", $.search_condition), ',', field("left", $.expression), ',', field("right", $.expression), ')'),
+
+    // JSON functions
+    seq(ISJSON, '(', field("json_expr", $.expression), optional(seq(',', field("json_type_constraint", $.expression))), ')'),
+    seq(JSON_OBJECT, '(', optional(seq(field("key_value", $.json_key_value), repeat(seq(',', field("key_value", $.json_key_value))))), optional($.json_null_clause), ')'),
+    seq(JSON_ARRAY, '(', optional($.expression_list_), optional($.json_null_clause), ')'),
+    seq(JSON_VALUE, '(', field("expr", $.expression), ',', field("path", $.expression), ')'),
+    seq(JSON_QUERY, '(', field("expr", $.expression), optional(seq(',', field("path", $.expression))), ')'),
+    seq(JSON_MODIFY, '(', field("expr", $.expression), ',', field("path", $.expression), ',', field("new_value", $.expression), ')'),
+    seq(JSON_PATH_EXISTS, '(', field("value_expression", $.expression), ',', field("sql_json_path", $.expression), ')'),
+
+    // Math functions
+    seq(ABS, '(', field("numeric_expression", $.expression), ')'),
+    seq(ACOS, '(', field("float_expression", $.expression), ')'),
+    seq(ASIN, '(', field("float_expression", $.expression), ')'),
+    seq(ATAN, '(', field("float_expression", $.expression), ')'),
+    seq(ATN2, '(', field("float_expression", $.expression), ',', field("float_expression", $.expression), ')'),
+    seq(CEILING, '(', field("numeric_expression", $.expression), ')'),
+    seq(COS, '(', field("float_expression", $.expression), ')'),
+    seq(COT, '(', field("float_expression", $.expression), ')'),
+    seq(DEGREES, '(', field("numeric_expression", $.expression), ')'),
+    seq(EXP, '(', field("float_expression", $.expression), ')'),
+    seq(FLOOR, '(', field("numeric_expression", $.expression), ')'),
+    seq(LOG, '(', field("float_expression", $.expression), optional(seq(',', field("base", $.expression))), ')'),
+    seq(LOG10, '(', field("float_expression", $.expression), ')'),
+    seq(PI, '(', ')'),
+    seq(POWER, '(', field("float_expression", $.expression), ',', field("y", $.expression), ')'),
+    seq(RADIANS, '(', field("numeric_expression", $.expression), ')'),
+    seq(RAND, '(', optional(field("seed", $.expression)), ')'),
+    seq(ROUND, '(', field("numeric_expression", $.expression), ',', field("length", $.expression), optional(seq(',', field("function", $.expression))), ')'),
+    seq(SIGN, '(', field("numeric_expression", $.expression), ')'),
+    seq(SIN, '(', field("float_expression", $.expression), ')'),
+    seq(SQRT, '(', field("float_expression", $.expression), ')'),
+    seq(SQUARE, '(', field("float_expression", $.expression), ')'),
+    seq(TAN, '(', field("float_expression", $.expression), ')'),
+
+    // Logical functions
+    seq(GREATEST, '(', $.expression_list_, ')'),
+    seq(LEAST, '(', $.expression_list_, ')'),
+
+    // Security functions
+    seq(CERTENCODED, '(', field("certid", $.expression), ')'),
+    seq(CERTPRIVATEKEY, '(', field("certid", $.expression), ',', field("encryption_password", $.expression), optional(seq(',', field("decryption_pasword", $.expression))), ')'),
+    CURRENT_USER,
+    seq(DATABASE_PRINCIPAL_ID, '(', optional(field("principal_name", $.expression)), ')'),
+    seq(HAS_DBACCESS, '(', field("database_name", $.expression), ')'),
+    seq(HAS_PERMS_BY_NAME, '(', field("securable", $.expression), ',', field("securable_class", $.expression), ',', field("permission", $.expression), optional(seq(',', field("sub_securable", $.expression), optional(seq(',', field("sub_securable_class", $.expression))))), ')'),
+    seq(IS_MEMBER, '(', field("group_or_role", $.expression), ')'),
+    seq(IS_ROLEMEMBER, '(', field("role", $.expression), optional(seq(',', field("database_principal", $.expression))), ')'),
+    seq(IS_SRVROLEMEMBER, '(', field("role", $.expression), optional(seq(',', field("login", $.expression))), ')'),
+    seq(LOGINPROPERTY, '(', field("login_name", $.expression), ',', field("property_name", $.expression), ')'),
+    ORIGINAL_LOGIN,
+    seq(PERMISSIONS, '(', optional(seq(field("object_id", $.expression), optional(seq(',', field("column", $.expression))))), ')'),
+    seq(PWDENCRYPT, '(', field("password", $.expression), ')'),
+    seq(PWDCOMPARE, '(', field("clear_text_password", $.expression), ',', field("password_hash", $.expression), optional(seq(',', field("version", $.expression))), ')'),
+    SESSION_USER,
+    seq(SESSIONPROPERTY, '(', field("option_name", $.expression), ')'),
+    seq(SUSER_ID, '(', optional(field("login", $.expression)), ')'),
+    seq(SUSER_NAME, '(', optional(field("server_user_sid", $.expression)), ')'),
+    seq(SUSER_SID, '(', optional(seq(field("login", $.expression), optional(seq(',', field("param2", $.expression))))), ')'),
+    seq(SUSER_SNAME, '(', optional(field("server_user_sid", $.expression)), ')'),
+    SYSTEM_USER,
+    USER,
+    seq(USER_ID, '(', optional(field("user", $.expression)), ')'),
+    seq(USER_NAME, '(', optional(field("id", $.expression)), ')')
+  ),
+
+  xml_data_type_methods: $ => choice(
+    $.value_method,
+    $.query_method,
+    $.exist_method,
+    $.modify_method
+  ),
+
+
+  // https://learn.microsoft.com/en-us/sql/t-sql/functions/date-bucket-transact-sql?view=sql-server-ver16
+dateparts_9: $ => choice(
+  YEAR,
+  YEAR_ABBR,
+  QUARTER,
+  QUARTER_ABBR,
+  MONTH,
+  MONTH_ABBR,
+  DAY,
+  DAY_ABBR,
+  WEEK,
+  WEEK_ABBR,
+  HOUR,
+  HOUR_ABBR,
+  MINUTE,
+  MINUTE_ABBR,
+  SECOND,
+  SECOND_ABBR,
+  MILLISECOND,
+  MILLISECOND_ABBR
+),
+
+  // https://learn.microsoft.com/en-us/sql/t-sql/functions/dateadd-transact-sql?view=sql-server-ver16
+dateparts_12: $ => choice(
+  $.dateparts_9,
+  DAYOFYEAR,
+  DAYOFYEAR_ABBR,
+  MICROSECOND,
+  MICROSECOND_ABBR,
+  NANOSECOND,
+  NANOSECOND_ABBR
+),
+
+  // https://learn.microsoft.com/en-us/sql/t-sql/functions/datename-transact-sql?view=sql-server-ver16
+dateparts_15: $ => choice(
+  $.dateparts_12,
+  WEEKDAY,
+  WEEKDAY_ABBR,
+  TZOFFSET,
+  TZOFFSET_ABBR,
+  ISO_WEEK,
+  ISO_WEEK_ABBR
+),
+
+  // https://learn.microsoft.com/en-us/sql/t-sql/functions/datetrunc-transact-sql?view=sql-server-ver16
+dateparts_datetrunc: $ => choice(
+  $.dateparts_9,
+  DAYOFYEAR,
+  DAYOFYEAR_ABBR,
+  MICROSECOND,
+  MICROSECOND_ABBR,
+  ISO_WEEK,
+  ISO_WEEK_ABBR
+),
+
+  value_method: $ => seq(
+    choice(
+      field("loc_id", LOCAL_ID),
+      field("value_id", $.full_column_name),
+      field("eventdata", seq(EVENTDATA, '(', ')')),
+      field("query", $.query_method),
+      seq('(', $.subquery, ')')
     ),
+    '.',
+    field("call", $.value_call)
+  ),
 
-    json_null_clause: $ => seq(
-      choice(ABSENT, NULL_), ON, NULL_
-    ),
-
-    built_in_functions: $ => choice(
-      // Metadata functions
-      seq(APP_NAME, '(', ')'),
-      seq(APPLOCK_MODE, '(', field("database_principal", $.expression), ',', field("resource_name", $.expression), ',', field("lock_owner", $.expression), ')'),
-      seq(APPLOCK_TEST, '(', field("database_principal", $.expression), ',', field("resource_name", $.expression), ',', field("lock_mode", $.expression), ',', field("lock_owner", $.expression), ')'),
-      seq(ASSEMBLYPROPERTY, '(', field("assembly_name", $.expression), ',', field("property_name", $.expression), ')'),
-      seq(COL_LENGTH, '(', field("table", $.expression), ',', field("column", $.expression), ')'),
-      seq(COL_NAME, '(', field("table_id", $.expression), ',', field("column_id", $.expression), ')'),
-      seq(COLUMNPROPERTY, '(', field("id", $.expression), ',', field("column", $.expression), ',', field("property", $.expression), ')'),
-      seq(DATABASEPROPERTYEX, '(', field("database", $.expression), ',', field("property", $.expression), ')'),
-      seq(DB_ID, '(', optional(field("database_name", $.expression)), ')'),
-      seq(DB_NAME, '(', optional(field("database_id", $.expression)), ')'),
-      seq(FILE_ID, '(', field("file_name", $.expression), ')'),
-      seq(FILE_IDEX, '(', field("file_name", $.expression), ')'),
-      seq(FILE_NAME, '(', field("file_id", $.expression), ')'),
-      seq(FILEGROUP_ID, '(', field("filegroup_name", $.expression), ')'),
-      seq(FILEGROUP_NAME, '(', field("filegroup_id", $.expression), ')'),
-      seq(FILEGROUPPROPERTY, '(', field("filegroup_name", $.expression), ',', field("property", $.expression), ')'),
-      seq(FILEPROPERTY, '(', field("file_name", $.expression), ',', field("property", $.expression), ')'),
-      seq(FILEPROPERTYEX, '(', field("name", $.expression), ',', field("property", $.expression), ')'),
-      seq(FULLTEXTCATALOGPROPERTY, '(', field("catalog_name", $.expression), ',', field("property", $.expression), ')'),
-      seq(FULLTEXTSERVICEPROPERTY, '(', field("property", $.expression), ')'),
-      seq(INDEX_COL, '(', field("table_or_view_name", $.expression), ',', field("index_id", $.expression), ',', field("key_id", $.expression), ')'),
-      seq(INDEXKEY_PROPERTY, '(', field("object_id", $.expression), ',', field("index_id", $.expression), ',', field("key_id", $.expression), ',', field("property", $.expression), ')'),
-      seq(INDEXPROPERTY, '(', field("object_id", $.expression), ',', field("index_or_statistics_name", $.expression), ',', field("property", $.expression), ')'),
-      seq(NEXT, VALUE, FOR, field("sequence_name", $.table_name), optional(seq(OVER, '(', $.order_by_clause, ')'))),
-      seq(OBJECT_DEFINITION, '(', field("object_id", $.expression), ')'),
-      seq(OBJECT_ID, '(', field("object_name", $.expression), optional(seq(',', field("object_type", $.expression))), ')'),
-      seq(OBJECT_NAME, '(', field("object_id", $.expression), optional(seq(',', field("database_id", $.expression))), ')'),
-      seq(OBJECT_SCHEMA_NAME, '(', field("object_id", $.expression), optional(seq(',', field("database_id", $.expression))), ')'),
-      seq(OBJECTPROPERTY, '(', field("id", $.expression), ',', field("property", $.expression), ')'),
-      seq(OBJECTPROPERTYEX, '(', field("id", $.expression), ',', field("property", $.expression), ')'),
-      seq(ORIGINAL_DB_NAME, '(', ')'),
-      seq(PARSENAME, '(', field("object_name", $.expression), ',', field("object_piece", $.expression), ')'),
-      seq(SCHEMA_ID, '(', optional(field("schema_name", $.expression)), ')'),
-      seq(SCHEMA_NAME, '(', optional(field("schema_id", $.expression)), ')'),
-      seq(SCOPE_IDENTITY, '(', ')'),
-      seq(SERVERPROPERTY, '(', field("property", $.expression), ')'),
-      seq(STATS_DATE, '(', field("object_id", $.expression), ',', field("stats_id", $.expression), ')'),
-      seq(TYPE_ID, '(', field("type_name", $.expression), ')'),
-      seq(TYPE_NAME, '(', field("type_id", $.expression), ')'),
-      seq(TYPEPROPERTY, '(', field("type", $.expression), ',', field("property", $.expression), ')'),
-
-      // String functions
-      seq(ASCII, '(', field("character_expression", $.expression), ')'),
-      seq(CHAR, '(', field("integer_expression", $.expression), ')'),
-      seq(CHARINDEX, '(', field("expressionToFind", $.expression), ',', field("expressionToSearch", $.expression), optional(seq(',', field("start_location", $.expression))), ')'),
-      seq(CONCAT, '(', field("string_value_1", $.expression), ',', field("string_value_2", $.expression), repeat(seq(',', field("string_value_n", $.expression))), ')'),
-      seq(CONCAT_WS, '(', field("separator", $.expression), ',', field("argument_1", $.expression), ',', field("argument_2", $.expression), repeat(seq(',', field("argument_n", $.expression))), ')'),
-      seq(DIFFERENCE, '(', field("character_expression_1", $.expression), ',', field("character_expression_2", $.expression), ')'),
-      seq(FORMAT, '(', field("value", $.expression), ',', field("format", $.expression), optional(seq(',', field("culture", $.expression))), ')'),
-      seq(LEFT, '(', field("character_expression", $.expression), ',', field("integer_expression", $.expression), ')'),
-      seq(LEN, '(', field("string_expression", $.expression), ')'),
-      seq(LOWER, '(', field("character_expression", $.expression), ')'),
-      seq(LTRIM, '(', field("character_expression", $.expression), ')'),
-      seq(NCHAR, '(', field("integer_expression", $.expression), ')'),
-      seq(PATINDEX, '(', field("pattern", $.expression), ',', field("string_expression", $.expression), ')'),
-      seq(QUOTENAME, '(', field("character_string", $.expression), optional(seq(',', field("quote_character", $.expression))), ')'),
-      seq(REPLACE, '(', field("input", $.expression), ',', field("replacing", $.expression), ',', field("with", $.expression), ')'),
-      seq(REPLICATE, '(', field("string_expression", $.expression), ',', field("integer_expression", $.expression), ')'),
-      seq(REVERSE, '(', field("string_expression", $.expression), ')'),
-      seq(RIGHT, '(', field("character_expression", $.expression), ',', field("integer_expression", $.expression), ')'),
-      seq(RTRIM, '(', field("character_expression", $.expression), ')'),
-      seq(SOUNDEX, '(', field("character_expression", $.expression), ')'),
-      seq(SPACE_KEYWORD, '(', field("integer_expression", $.expression), ')'),
-      seq(STR, '(', field("float_expression", $.expression), optional(seq(',', field("length_expression", $.expression), optional(seq(',', field("decimal", $.expression))))), ')'),
-      seq(STRING_AGG, '(', field("expr", $.expression), ',', field("separator", $.expression), ')', optional(seq(WITHIN, GROUP, '(', $.order_by_clause, ')'))),
-      seq(STRING_ESCAPE, '(', field("text_", $.expression), ',', field("type_", $.expression), ')'),
-      seq(STUFF, '(', field("str", $.expression), ',', field("from", $.expression), ',', field("to", $.expression), ',', field("str_with", $.expression), ')'),
-      seq(SUBSTRING, '(', field("string_expression", $.expression), ',', field("start_", $.expression), ',', field("length", $.expression), ')'),
-      seq(TRANSLATE, '(', field("inputString", $.expression), ',', field("characters", $.expression), ',', field("translations", $.expression), ')'),
-      seq(TRIM, '(', optional(seq(field("characters", $.expression), FROM)), field("string_", $.expression), ')'),
-      seq(UNICODE, '(', field("ncharacter_expression", $.expression), ')'),
-      seq(UPPER, '(', field("character_expression", $.expression), ')'),
-
-      // System functions
-      seq(BINARY_CHECKSUM, '(', choice('*', seq($.expression, repeat(seq(',', $.expression)))), ')'),
-      seq(CHECKSUM, '(', choice('*', seq($.expression, repeat(seq(',', $.expression)))), ')'),
-      seq(COMPRESS, '(', field("expr", $.expression), ')'),
-      seq(CONNECTIONPROPERTY, '(', field("property", STRING), ')'),
-      seq(CONTEXT_INFO, '(', ')'),
-      seq(CURRENT_REQUEST_ID, '(', ')'),
-      seq(CURRENT_TRANSACTION_ID, '(', ')'),
-      seq(DECOMPRESS, '(', field("expr", $.expression), ')'),
-      seq(ERROR_LINE, '(', ')'),
-      seq(ERROR_MESSAGE, '(', ')'),
-      seq(ERROR_NUMBER, '(', ')'),
-      seq(ERROR_PROCEDURE, '(', ')'),
-      seq(ERROR_SEVERITY, '(', ')'),
-      seq(ERROR_STATE, '(', ')'),
-      seq(FORMATMESSAGE, '(', choice(field("msg_number", DECIMAL), field("msg_string", STRING), field("msg_variable", LOCAL_ID)), ',', $.expression, repeat(seq(',', $.expression)), ')'),
-      seq(GET_FILESTREAM_TRANSACTION_CONTEXT, '(', ')'),
-      seq(GETANSINULL, '(', optional(field("database", STRING)), ')'),
-      seq(HOST_ID, '(', ')'),
-      seq(HOST_NAME, '(', ')'),
-      seq(ISNULL, '(', field("left", $.expression), ',', field("right", $.expression), ')'),
-      seq(ISNUMERIC, '(', $.expression, ')'),
-      seq(MIN_ACTIVE_ROWVERSION, '(', ')'),
-      seq(NEWID, '(', ')'),
-      seq(NEWSEQUENTIALID, '(', ')'),
-      seq(ROWCOUNT_BIG, '(', ')'),
-      seq(SESSION_CONTEXT, '(', field("key", STRING), ')'),
-      seq(XACT_STATE, '(', ')'),
-      seq(CAST, '(', $.expression, AS, $.data_type, ')'),
-      seq(TRY_CAST, '(', $.expression, AS, $.data_type, ')'),
-      seq(CONVERT, '(', field("convert_data_type", $.data_type), ',', field("convert_expression", $.expression), optional(seq(',', field("style", $.expression))), ')'),
-      seq(COALESCE, '(', $.expression_list_, ')'),
-
-      // Cursor functions
-      CURSOR_ROWS,
-      FETCH_STATUS,
-      seq(CURSOR_STATUS, '(', field("scope", STRING), ',', field("cursor", $.expression), ')'),
-
-      // Cryptographic functions
-      seq(CERT_ID, '(', field("cert_name", $.expression), ')'),
-
-      // Data type functions
-      seq(DATALENGTH, '(', $.expression, ')'),
-      seq(IDENT_CURRENT, '(', field("table_or_view", $.expression), ')'),
-      seq(IDENT_INCR, '(', field("table_or_view", $.expression), ')'),
-      seq(IDENT_SEED, '(', field("table_or_view", $.expression), ')'),
-      seq(IDENTITY, '(', field("datatype", $.data_type), optional(seq(',', field("seed", DECIMAL), ',', field("increment", DECIMAL))), ')'),
-      seq(SQL_VARIANT_PROPERTY, '(', field("expr", $.expression), ',', field("property", STRING), ')'),
-
-      // Date functions
-      seq(CURRENT_DATE, '(', ')'),
-      CURRENT_TIMESTAMP,
-      seq(CURRENT_TIMEZONE, '(', ')'),
-      seq(CURRENT_TIMEZONE_ID, '(', ')'),
-      seq(DATE_BUCKET, '(', field("datepart", $.dateparts_9), ',', field("number", $.expression), ',', field("date", $.expression), optional(seq(',', field("origin", $.expression))), ')'),
-      seq(DATEADD, '(', field("datepart", $.dateparts_12), ',', field("number", $.expression), ',', field("date", $.expression), ')'),
-      seq(DATEDIFF, '(', field("datepart", $.dateparts_12), ',', field("date_first", $.expression), ',', field("date_second", $.expression), ')'),
-      seq(DATEDIFF_BIG, '(', field("datepart", $.dateparts_12), ',', field("startdate", $.expression), ',', field("enddate", $.expression), ')'),
-      seq(DATEFROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ')'),
-      seq(DATENAME, '(', field("datepart", $.dateparts_15), ',', field("date", $.expression), ')'),
-      seq(DATEPART, '(', field("datepart", $.dateparts_15), ',', field("date", $.expression), ')'),
-      seq(DATETIME2FROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ',', field("hour", $.expression), ',', field("minute", $.expression), ',', field("seconds", $.expression), ',', field("fractions", $.expression), ',', field("precision", $.expression), ')'),
-      seq(DATETIMEFROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ',', field("hour", $.expression), ',', field("minute", $.expression), ',', field("seconds", $.expression), ',', field("milliseconds", $.expression), ')'),
-      seq(DATETIMEOFFSETFROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ',', field("hour", $.expression), ',', field("minute", $.expression), ',', field("seconds", $.expression), ',', field("fractions", $.expression), ',', field("hour_offset", $.expression), ',', field("minute_offset", $.expression), ',', field("precision", DECIMAL), ')'),
-      seq(DATETRUNC, '(', field("datepart", $.dateparts_datetrunc), ',', field("date", $.expression), ')'),
-      seq(DAY, '(', field("date", $.expression), ')'),
-      seq(EOMONTH, '(', field("start_date", $.expression), optional(seq(',', field("month_to_add", $.expression))), ')'),
-      seq(GETDATE, '(', ')'),
-      seq(GETUTCDATE, '(', ')'),
-      seq(ISDATE, '(', $.expression, ')'),
-      seq(MONTH, '(', field("date", $.expression), ')'),
-      seq(SMALLDATETIMEFROMPARTS, '(', field("year", $.expression), ',', field("month", $.expression), ',', field("day", $.expression), ',', field("hour", $.expression), ',', field("minute", $.expression), ')'),
-      seq(SWITCHOFFSET, '(', field("datetimeoffset_expression", $.expression), ',', field("timezoneoffset_expression", $.expression), ')'),
-      seq(SYSDATETIME, '(', ')'),
-      seq(SYSDATETIMEOFFSET, '(', ')'),
-      seq(SYSUTCDATETIME, '(', ')'),
-      seq(TIMEFROMPARTS, '(', field("hour", $.expression), ',', field("minute", $.expression), ',', field("seconds", $.expression), ',', field("fractions", $.expression), ',', field("precision", DECIMAL), ')'),
-      seq(TODATETIMEOFFSET, '(', field("datetime_expression", $.expression), ',', field("timezoneoffset_expression", $.expression), ')'),
-      seq(YEAR, '(', field("date", $.expression), ')'),
-      seq(IDENTITY, '(', field("data_type", $.data_type), optional(seq(',', field("seed", DECIMAL))), optional(seq(',', field("increment", DECIMAL))), ')'),
-      seq(NULLIF, '(', field("left", $.expression), ',', field("right", $.expression), ')'),
-      seq(PARSE, '(', field("str", $.expression), AS, $.data_type, optional(seq(USING, field("culture", $.expression))), ')'),
-      $.xml_data_type_methods,
-      seq(IIF, '(', field("cond", $.search_condition), ',', field("left", $.expression), ',', field("right", $.expression), ')'),
-
-      // JSON functions
-      seq(ISJSON, '(', field("json_expr", $.expression), optional(seq(',', field("json_type_constraint", $.expression))), ')'),
-      seq(JSON_OBJECT, '(', optional(seq(field("key_value", $.json_key_value), repeat(seq(',', field("key_value", $.json_key_value))))), optional($.json_null_clause), ')'),
-      seq(JSON_ARRAY, '(', optional($.expression_list_), optional($.json_null_clause), ')'),
-      seq(JSON_VALUE, '(', field("expr", $.expression), ',', field("path", $.expression), ')'),
-      seq(JSON_QUERY, '(', field("expr", $.expression), optional(seq(',', field("path", $.expression))), ')'),
-      seq(JSON_MODIFY, '(', field("expr", $.expression), ',', field("path", $.expression), ',', field("new_value", $.expression), ')'),
-      seq(JSON_PATH_EXISTS, '(', field("value_expression", $.expression), ',', field("sql_json_path", $.expression), ')'),
-
-      // Math functions
-      seq(ABS, '(', field("numeric_expression", $.expression), ')'),
-      seq(ACOS, '(', field("float_expression", $.expression), ')'),
-      seq(ASIN, '(', field("float_expression", $.expression), ')'),
-      seq(ATAN, '(', field("float_expression", $.expression), ')'),
-      seq(ATN2, '(', field("float_expression", $.expression), ',', field("float_expression", $.expression), ')'),
-      seq(CEILING, '(', field("numeric_expression", $.expression), ')'),
-      seq(COS, '(', field("float_expression", $.expression), ')'),
-      seq(COT, '(', field("float_expression", $.expression), ')'),
-      seq(DEGREES, '(', field("numeric_expression", $.expression), ')'),
-      seq(EXP, '(', field("float_expression", $.expression), ')'),
-      seq(FLOOR, '(', field("numeric_expression", $.expression), ')'),
-      seq(LOG, '(', field("float_expression", $.expression), optional(seq(',', field("base", $.expression))), ')'),
-      seq(LOG10, '(', field("float_expression", $.expression), ')'),
-      seq(PI, '(', ')'),
-      seq(POWER, '(', field("float_expression", $.expression), ',', field("y", $.expression), ')'),
-      seq(RADIANS, '(', field("numeric_expression", $.expression), ')'),
-      seq(RAND, '(', optional(field("seed", $.expression)), ')'),
-      seq(ROUND, '(', field("numeric_expression", $.expression), ',', field("length", $.expression), optional(seq(',', field("function", $.expression))), ')'),
-      seq(SIGN, '(', field("numeric_expression", $.expression), ')'),
-      seq(SIN, '(', field("float_expression", $.expression), ')'),
-      seq(SQRT, '(', field("float_expression", $.expression), ')'),
-      seq(SQUARE, '(', field("float_expression", $.expression), ')'),
-      seq(TAN, '(', field("float_expression", $.expression), ')'),
-
-      // Logical functions
-      seq(GREATEST, '(', $.expression_list_, ')'),
-      seq(LEAST, '(', $.expression_list_, ')'),
-
-      // Security functions
-      seq(CERTENCODED, '(', field("certid", $.expression), ')'),
-      seq(CERTPRIVATEKEY, '(', field("certid", $.expression), ',', field("encryption_password", $.expression), optional(seq(',', field("decryption_pasword", $.expression))), ')'),
-      CURRENT_USER,
-      seq(DATABASE_PRINCIPAL_ID, '(', optional(field("principal_name", $.expression)), ')'),
-      seq(HAS_DBACCESS, '(', field("database_name", $.expression), ')'),
-      seq(HAS_PERMS_BY_NAME, '(', field("securable", $.expression), ',', field("securable_class", $.expression), ',', field("permission", $.expression), optional(seq(',', field("sub_securable", $.expression), optional(seq(',', field("sub_securable_class", $.expression))))), ')'),
-      seq(IS_MEMBER, '(', field("group_or_role", $.expression), ')'),
-      seq(IS_ROLEMEMBER, '(', field("role", $.expression), optional(seq(',', field("database_principal", $.expression))), ')'),
-      seq(IS_SRVROLEMEMBER, '(', field("role", $.expression), optional(seq(',', field("login", $.expression))), ')'),
-      seq(LOGINPROPERTY, '(', field("login_name", $.expression), ',', field("property_name", $.expression), ')'),
-      ORIGINAL_LOGIN,
-      seq(PERMISSIONS, '(', optional(seq(field("object_id", $.expression), optional(seq(',', field("column", $.expression))))), ')'),
-      seq(PWDENCRYPT, '(', field("password", $.expression), ')'),
-      seq(PWDCOMPARE, '(', field("clear_text_password", $.expression), ',', field("password_hash", $.expression), optional(seq(',', field("version", $.expression))), ')'),
-      SESSION_USER,
-      seq(SESSIONPROPERTY, '(', field("option_name", $.expression), ')'),
-      seq(SUSER_ID, '(', optional(field("login", $.expression)), ')'),
-      seq(SUSER_NAME, '(', optional(field("server_user_sid", $.expression)), ')'),
-      seq(SUSER_SID, '(', optional(seq(field("login", $.expression), optional(seq(',', field("param2", $.expression))))), ')'),
-      seq(SUSER_SNAME, '(', optional(field("server_user_sid", $.expression)), ')'),
-      SYSTEM_USER,
-      USER,
-      seq(USER_ID, '(', optional(field("user", $.expression)), ')'),
-      seq(USER_NAME, '(', optional(field("id", $.expression)), ')')
-    ),
-
-    xml_data_type_methods: $ => choice(
-        $.value_method,
-        $.query_method,
-        $.exist_method,
-        $.modify_method
-    ),
-
-
-    // https://learn.microsoft.com/en-us/sql/t-sql/functions/date-bucket-transact-sql?view=sql-server-ver16
-    dateparts_9: $ => choice(
-      YEAR,
-      YEAR_ABBR,
-      QUARTER,
-      QUARTER_ABBR,
-      MONTH,
-      MONTH_ABBR,
-      DAY,
-      DAY_ABBR,
-      WEEK,
-      WEEK_ABBR,
-      HOUR,
-      HOUR_ABBR,
-      MINUTE,
-      MINUTE_ABBR,
-      SECOND,
-      SECOND_ABBR,
-      MILLISECOND,
-      MILLISECOND_ABBR
-    ),
-
-    // https://learn.microsoft.com/en-us/sql/t-sql/functions/dateadd-transact-sql?view=sql-server-ver16
-    dateparts_12: $ => choice(
-      $.dateparts_9,
-      DAYOFYEAR,
-      DAYOFYEAR_ABBR,
-      MICROSECOND,
-      MICROSECOND_ABBR,
-      NANOSECOND,
-      NANOSECOND_ABBR
-    ),
-
-    // https://learn.microsoft.com/en-us/sql/t-sql/functions/datename-transact-sql?view=sql-server-ver16
-    dateparts_15: $ => choice(
-      $.dateparts_12,
-      WEEKDAY,
-      WEEKDAY_ABBR,
-      TZOFFSET,
-      TZOFFSET_ABBR,
-      ISO_WEEK,
-      ISO_WEEK_ABBR
-    ),
-
-    // https://learn.microsoft.com/en-us/sql/t-sql/functions/datetrunc-transact-sql?view=sql-server-ver16
-    dateparts_datetrunc: $ => choice(
-      $.dateparts_9,
-      DAYOFYEAR,
-      DAYOFYEAR_ABBR,
-      MICROSECOND,
-      MICROSECOND_ABBR,
-      ISO_WEEK,
-      ISO_WEEK_ABBR
-    ),
-
-    value_method: $ => seq(
-      choice(
-        field("loc_id", LOCAL_ID),
-        field("value_id", $.full_column_name),
-        field("eventdata", seq(EVENTDATA, '(', ')')),
-        field("query", $.query_method),
-        seq('(', $.subquery, ')')
-      ),
-      '.',
-      field("call", $.value_call)
-    ),
-
-    value_call: $ => seq(
-      choice(VALUE, VALUE_SQUARE_BRACKET),
-      '(',
+  value_call: $ => seq(
+    choice(VALUE, VALUE_SQUARE_BRACKET),
+    '(',
       field("xquery", STRING),
       ',',
       field("sqltype", STRING),
       ')'
-    ),
+  ),
 
-    query_method: $ => seq(
-      choice(
-        field("loc_id", LOCAL_ID),
-        field("value_id", $.full_column_name),
-        seq('(', $.subquery, ')')
-      ),
-      '.',
-      field("call", $.query_call)
+  query_method: $ => seq(
+    choice(
+      field("loc_id", LOCAL_ID),
+      field("value_id", $.full_column_name),
+      seq('(', $.subquery, ')')
     ),
+    '.',
+    field("call", $.query_call)
+  ),
 
-    query_call: $ => seq(
-      choice(QUERY, QUERY_SQUARE_BRACKET),
-      '(',
+  query_call: $ => seq(
+    choice(QUERY, QUERY_SQUARE_BRACKET),
+    '(',
       field("xquery", STRING),
       ')'
-    ),
+  ),
 
-    exist_method: $ => seq(
-      choice(
-        field("loc_id", LOCAL_ID),
-        field("value_id", $.full_column_name),
-        seq('(', $.subquery, ')')
-      ),
-      '.',
-      field("call", $.exist_call)
+  exist_method: $ => seq(
+    choice(
+      field("loc_id", LOCAL_ID),
+      field("value_id", $.full_column_name),
+      seq('(', $.subquery, ')')
     ),
+    '.',
+    field("call", $.exist_call)
+  ),
 
-    exist_call: $ => seq(
-      choice(EXIST, EXIST_SQUARE_BRACKET),
-      '(',
+  exist_call: $ => seq(
+    choice(EXIST, EXIST_SQUARE_BRACKET),
+    '(',
       field("xquery", STRING),
       ')'
-    ),
+  ),
 
-    modify_method: $ => seq(
-      choice(
-        field("loc_id", LOCAL_ID),
-        field("value_id", $.full_column_name),
-        seq('(', $.subquery, ')')
-      ),
-      '.',
-      field("call", $.modify_call)
+  modify_method: $ => seq(
+    choice(
+      field("loc_id", LOCAL_ID),
+      field("value_id", $.full_column_name),
+      seq('(', $.subquery, ')')
     ),
+    '.',
+    field("call", $.modify_call)
+  ),
 
-    modify_call: $ => seq(
-      choice(MODIFY, MODIFY_SQUARE_BRACKET),
-      '(',
+  modify_call: $ => seq(
+    choice(MODIFY, MODIFY_SQUARE_BRACKET),
+    '(',
       field("xml_dml", STRING),
       ')'
-    ),
+  ),
 
-    hierarchyid_call: $ => choice(
-      seq(GETANCESTOR, '(', field("n", $.expression), ')'),
-      seq(
-        GETDESCENDANT,
-        '(',
+  hierarchyid_call: $ => choice(
+    seq(GETANCESTOR, '(', field("n", $.expression), ')'),
+    seq(
+      GETDESCENDANT,
+      '(',
         field("child1", $.expression),
         ',',
         field("child2", $.expression),
         ')'
-      ),
-      seq(GETLEVEL, '(', ')'),
-      seq(ISDESCENDANTOF, '(', field("parent_", $.expression), ')'),
-      seq(
-        GETREPARENTEDVALUE,
-        '(',
+    ),
+    seq(GETLEVEL, '(', ')'),
+    seq(ISDESCENDANTOF, '(', field("parent_", $.expression), ')'),
+    seq(
+      GETREPARENTEDVALUE,
+      '(',
         field("oldroot", $.expression),
         ',',
         field("newroot", $.expression),
         ')'
-      ),
-      seq(TOSTRING, '(', ')')
     ),
+    seq(TOSTRING, '(', ')')
+  ),
 
-    hierarchyid_static_method: $ => seq(
-      HIERARCHYID,
-      DOUBLE_COLON,
-      choice(
-        seq(GETROOT, '(', ')'),
-        seq(PARSE, '(', field("input", $.expression), ')')
-      )
+  hierarchyid_static_method: $ => seq(
+    HIERARCHYID,
+    DOUBLE_COLON,
+    choice(
+      seq(GETROOT, '(', ')'),
+      seq(PARSE, '(', field("input", $.expression), ')')
+    )
+  ),
+
+  nodes_method: $ => seq(
+    choice(
+      field("loc_id", LOCAL_ID),
+      field("value_id", $.full_column_name),
+      seq('(', $.subquery, ')')
     ),
-
-    nodes_method: $ => seq(
-      choice(
-        field("loc_id", LOCAL_ID),
-        field("value_id", $.full_column_name),
-        seq('(', $.subquery, ')')
-      ),
-      '.',
-      NODES,
-      '(',
+    '.',
+    NODES,
+    '(',
       field("xquery", STRING),
       ')'
-    ),
+  ),
 
-    switch_section: $ => seq(
-      WHEN,
-      $.expression,
-      THEN,
-      $.expression
-    ),
+  switch_section: $ => seq(
+    WHEN,
+    $.expression,
+    THEN,
+    $.expression
+  ),
 
-    switch_search_condition_section: $ => seq(
-      WHEN,
-      $.search_condition,
-      THEN,
-      $.expression
-    ),
+  switch_search_condition_section: $ => seq(
+    WHEN,
+    $.search_condition,
+    THEN,
+    $.expression
+  ),
 
-    as_column_alias: $ => seq(optional(AS), $.column_alias),
+  as_column_alias: $ => seq(optional(AS), $.column_alias),
 
-    table_alias: $ => $.id_,
+  table_alias: $ => $.id_,
 
-    with_table_hints: $ => seq(
-      WITH,
-      '(',
+  with_table_hints: $ => seq(
+    WITH,
+    '(',
       field("hint", $.table_hint),
       repeat(seq(
         optional(','),
         field("hint", $.table_hint)
       )),
       ')'
+  ),
+
+  deprecated_table_hint: $ => seq("(", $.table_hint, ")"),
+
+  sybase_legacy_hints: $ => repeat1($.sybase_legacy_hint),
+
+  sybase_legacy_hint: $ => choice(
+    HOLDLOCK,
+    NOHOLDLOCK,
+    READPAST,
+    SHARED
+  ),
+
+  table_hint: $ => choice(
+    NOEXPAND,
+    seq(
+      INDEX, choice(
+        seq('(', $.index_value, repeat(seq(',' $.index_value)), ')'),
+        seq('=', '(', $.index_value, ')'),
+        seq('=', $.index_value),
+      )
     ),
+    seq(FORCESEEK, optional(seq('(', $.index_value, '(', $.column_name_list, ')', ')'))),
+    FORCESCAN,
+    HOLDLOCK,
+    NOLOCK,
+    NOWAIT,
+    PAGLOCK,
+    READCOMMITTED,
+    READCOMMITTEDLOCK,
+    READPAST,
+    READUNCOMMITTED,
+    REPEATABLEREAD,
+    ROWLOCK,
+    SERIALIZABLE,
+    SNAPSHOT,
+    seq(SPATIAL_WINDOW_MAX_CELLS, '=', DECIMAL),
+    TABLOCK,
+    TABLOCKX,
+    UPDLOCK,
+    XLOCK,
+    KEEPIDENTITY,
+    KEEPDEFAULTS,
+    IGNORE_CONSTRAINTS,
+    IGNORE_TRIGGERS
+  ),
 
-    deprecated_table_hint: $ => seq("(", $.table_hint, ")"),
+  index_value: $ => choice(
+    $.id_,
+    DECIMAL
+  ),
 
-    sybase_legacy_hints: $ => repeat1($.sybase_legacy_hint),
-
-    sybase_legacy_hint: $ => choice(
-      HOLDLOCK,
-      NOHOLDLOCK,
-      READPAST,
-      SHARED
-    ),
-
-    table_hint: $ => choice(
-        NOEXPAND,
-        seq(
-          INDEX, choice(
-            seq('(', $.index_value, repeat(seq(',' $.index_value)), ')'),
-            seq('=', '(', $.index_value, ')'),
-            seq('=', $.index_value),
-          )
-        ),
-        seq(FORCESEEK, optional(seq('(', $.index_value, '(', $.column_name_list, ')', ')'))),
-        FORCESCAN,
-        HOLDLOCK,
-        NOLOCK,
-        NOWAIT,
-        PAGLOCK,
-        READCOMMITTED,
-        READCOMMITTEDLOCK,
-        READPAST,
-        READUNCOMMITTED,
-        REPEATABLEREAD,
-        ROWLOCK,
-        SERIALIZABLE,
-        SNAPSHOT,
-        seq(SPATIAL_WINDOW_MAX_CELLS, '=', DECIMAL),
-        TABLOCK,
-        TABLOCKX,
-        UPDLOCK,
-        XLOCK,
-        KEEPIDENTITY,
-        KEEPDEFAULTS,
-        IGNORE_CONSTRAINTS,
-        IGNORE_TRIGGERS
-    ),
-
-    index_value: $ => choice(
-      $.id_,
-      DECIMAL
-    ),
-
-    column_alias_list: $ => seq(
-      '(',
+  column_alias_list: $ => seq(
+    '(',
       commaSep1(field("alias", $.column_alias)),
       ')'
-    ),
+  ),
 
-    column_alias: $ => choice(
-      $.id_,
-      STRING
-    ),
+  column_alias: $ => choice(
+    $.id_,
+    STRING
+  ),
 
-    table_value_constructor: $ => seq(
-      VALUES,
-      commaSep1(
-        seq('(', field("exps", $.expression_list_), ')')
-      )
-    ),
+  table_value_constructor: $ => seq(
+    VALUES,
+    commaSep1(
+      seq('(', field("exps", $.expression_list_), ')')
+    )
+  ),
 
-    expression_list_: $ => commaSep1(
-      field("exp", $.expression)
-    ),
+  expression_list_: $ => commaSep1(
+    field("exp", $.expression)
+  ),
 
-    // https://msdn.microsoft.com/en-us/library/ms189798.aspx
-    ranking_windowed_function: $ => choice(
-      seq(
-        choice(RANK, DENSE_RANK, ROW_NUMBER),
-        '(',
-        ')',
-        $.over_clause
-      ),
-      seq(
-        NTILE,
-        '(',
+  // https://msdn.microsoft.com/en-us/library/ms189798.aspx
+ranking_windowed_function: $ => choice(
+  seq(
+    choice(RANK, DENSE_RANK, ROW_NUMBER),
+    '(',
+      ')',
+    $.over_clause
+  ),
+  seq(
+    NTILE,
+    '(',
+      $.expression,
+      ')',
+    $.over_clause
+  )
+),
+
+  // https://msdn.microsoft.com/en-us/library/ms173454.aspx
+aggregate_windowed_function: $ => choice(
+  seq(
+    field("agg_func", choice(AVG, MAX, MIN, SUM, STDEV, STDEVP, VAR, VARP)),
+    '(',
+      $.all_distinct_expression,
+      ')',
+    optional($.over_clause)
+  ),
+  seq(
+    field("cnt", choice(COUNT, COUNT_BIG)),
+    '(',
+      choice('*', $.all_distinct_expression),
+      ')',
+    optional($.over_clause)
+  ),
+  seq(
+    CHECKSUM_AGG,
+    '(',
+      $.all_distinct_expression,
+      ')'
+  ),
+  seq(
+    GROUPING,
+    '(',
+      $.expression,
+      ')'
+  ),
+  seq(
+    GROUPING_ID,
+    '(',
+      $.expression_list_,
+      ')'
+  )
+),
+
+  // https://docs.microsoft.com/en-us/sql/t-sql/functions/analytic-functions-transact-sql
+analytic_windowed_function: $ => choice(
+  seq(
+    choice(FIRST_VALUE, LAST_VALUE),
+    '(',
+      $.expression,
+      ')',
+    $.over_clause
+  ),
+  seq(
+    choice(LAG, LEAD),
+    '(',
+      $.expression,
+      optional(seq(
+        ',',
         $.expression,
-        ')',
-        $.over_clause
-      )
-    ),
+        optional(seq(',', $.expression))
+      )),
+      ')',
+    $.over_clause
+  ),
+  seq(
+    choice(CUME_DIST, PERCENT_RANK),
+    '(',
+      ')',
+    OVER,
+    '(',
+      optional(seq(PARTITION, BY, $.expression_list_)),
+      $.order_by_clause,
+      ')'
+  ),
+  seq(
+    choice(PERCENTILE_CONT, PERCENTILE_DISC),
+    '(',
+      $.expression,
+      ')',
+    WITHIN,
+    GROUP,
+    '(',
+      $.order_by_clause,
+      ')',
+    OVER,
+    '(',
+      optional(seq(PARTITION, BY, $.expression_list_)),
+      ')'
+  )
+),
 
-    // https://msdn.microsoft.com/en-us/library/ms173454.aspx
-    aggregate_windowed_function: $ => choice(
-      seq(
-        field("agg_func", choice(AVG, MAX, MIN, SUM, STDEV, STDEVP, VAR, VARP)),
-        '(',
-        $.all_distinct_expression,
-        ')',
-        optional($.over_clause)
-      ),
-      seq(
-        field("cnt", choice(COUNT, COUNT_BIG)),
-        '(',
-        choice('*', $.all_distinct_expression),
-        ')',
-        optional($.over_clause)
-      ),
-      seq(
-        CHECKSUM_AGG,
-        '(',
-        $.all_distinct_expression,
-        ')'
-      ),
-      seq(
-        GROUPING,
-        '(',
-        $.expression,
-        ')'
-      ),
-      seq(
-        GROUPING_ID,
-        '(',
-        $.expression_list_,
-        ')'
-      )
-    ),
+  all_distinct_expression: $ => seq(
+    optional(choice(ALL, DISTINCT)),
+    $.expression
+  ),
 
-    // https://docs.microsoft.com/en-us/sql/t-sql/functions/analytic-functions-transact-sql
-    analytic_windowed_function: $ => choice(
-      seq(
-        choice(FIRST_VALUE, LAST_VALUE),
-        '(',
-        $.expression,
-        ')',
-        $.over_clause
-      ),
-      seq(
-        choice(LAG, LEAD),
-        '(',
-        $.expression,
-        optional(seq(
-          ',',
-          $.expression,
-          optional(seq(',', $.expression))
-        )),
-        ')',
-        $.over_clause
-      ),
-      seq(
-        choice(CUME_DIST, PERCENT_RANK),
-        '(',
-        ')',
-        OVER,
-        '(',
-        optional(seq(PARTITION, BY, $.expression_list_)),
-        $.order_by_clause,
-        ')'
-      ),
-      seq(
-        choice(PERCENTILE_CONT, PERCENTILE_DISC),
-        '(',
-        $.expression,
-        ')',
-        WITHIN,
-        GROUP,
-        '(',
-        $.order_by_clause,
-        ')',
-        OVER,
-        '(',
-        optional(seq(PARTITION, BY, $.expression_list_)),
-        ')'
-      )
-    ),
-
-    all_distinct_expression: $ => seq(
-      optional(choice(ALL, DISTINCT)),
-      $.expression
-    ),
-
-    over_clause: $ => seq(
-      OVER,
-      '(',
+  over_clause: $ => seq(
+    OVER,
+    '(',
       optional(seq(PARTITION, BY, $.expression_list_)),
       optional($.order_by_clause),
       optional($.row_or_range_clause),
       ')'
-    ),
+  ),
 
-    row_or_range_clause: $ => seq(
-      choice(ROWS, RANGE),
-      $.window_frame_extent
-    ),
+  row_or_range_clause: $ => seq(
+    choice(ROWS, RANGE),
+    $.window_frame_extent
+  ),
 
-    window_frame_extent: $ => choice(
-      $.window_frame_preceding,
-      seq(BETWEEN, $.window_frame_bound, AND, $.window_frame_bound)
-    ),
+  window_frame_extent: $ => choice(
+    $.window_frame_preceding,
+    seq(BETWEEN, $.window_frame_bound, AND, $.window_frame_bound)
+  ),
 
-    window_frame_bound: $ => choice(
-      $.window_frame_preceding,
-      $.window_frame_following
-    ),
+  window_frame_bound: $ => choice(
+    $.window_frame_preceding,
+    $.window_frame_following
+  ),
 
-    window_frame_preceding: $ => choice(
-      seq(UNBOUNDED, PRECEDING),
-      seq(DECIMAL, PRECEDING),
-      seq(CURRENT, ROW)
-    ),
+  window_frame_preceding: $ => choice(
+    seq(UNBOUNDED, PRECEDING),
+    seq(DECIMAL, PRECEDING),
+    seq(CURRENT, ROW)
+  ),
 
-    window_frame_following: $ => choice(
-      seq(UNBOUNDED, FOLLOWING),
-      seq(DECIMAL, FOLLOWING)
-    ),
+  window_frame_following: $ => choice(
+    seq(UNBOUNDED, FOLLOWING),
+    seq(DECIMAL, FOLLOWING)
+  ),
 
-    create_database_option: $ => choice(
-      seq(FILESTREAM, '(', commaSep1($.database_filestream_option), ')'),
-      seq(DEFAULT_LANGUAGE, EQUAL, choice($.id_, STRING)),
-      seq(DEFAULT_FULLTEXT_LANGUAGE, EQUAL, choice($.id_, STRING)),
-      seq(NESTED_TRIGGERS, EQUAL, choice(OFF, ON)),
-      seq(TRANSFORM_NOISE_WORDS, EQUAL, choice(OFF, ON)),
-      seq(TWO_DIGIT_YEAR_CUTOFF, EQUAL, DECIMAL),
-      seq(DB_CHAINING, choice(OFF, ON)),
-      seq(TRUSTWORTHY, choice(OFF, ON))
-    ),
+  create_database_option: $ => choice(
+    seq(FILESTREAM, '(', commaSep1($.database_filestream_option), ')'),
+    seq(DEFAULT_LANGUAGE, EQUAL, choice($.id_, STRING)),
+    seq(DEFAULT_FULLTEXT_LANGUAGE, EQUAL, choice($.id_, STRING)),
+    seq(NESTED_TRIGGERS, EQUAL, choice(OFF, ON)),
+    seq(TRANSFORM_NOISE_WORDS, EQUAL, choice(OFF, ON)),
+    seq(TWO_DIGIT_YEAR_CUTOFF, EQUAL, DECIMAL),
+    seq(DB_CHAINING, choice(OFF, ON)),
+    seq(TRUSTWORTHY, choice(OFF, ON))
+  ),
 
-    database_filestream_option: $ => seq(
-      LR_BRACKET,
-      choice(
-        seq(NON_TRANSACTED_ACCESS, EQUAL, choice(OFF, READ_ONLY, FULL)),
-        seq(DIRECTORY_NAME, EQUAL, STRING)
-      ),
-      RR_BRACKET
+  database_filestream_option: $ => seq(
+    LR_BRACKET,
+    choice(
+      seq(NON_TRANSACTED_ACCESS, EQUAL, choice(OFF, READ_ONLY, FULL)),
+      seq(DIRECTORY_NAME, EQUAL, STRING)
     ),
+    RR_BRACKET
+  ),
 
-    database_file_spec: $ => choice(
-      $.file_group,
-      $.file_spec
-    ),
+  database_file_spec: $ => choice(
+    $.file_group,
+    $.file_spec
+  ),
 
-    file_group: $ => seq(
-      FILEGROUP,
-      $.id_,
-      optional(seq(CONTAINS, FILESTREAM)),
-      optional(DEFAULT),
-      optional(seq(CONTAINS, MEMORY_OPTIMIZED_DATA)),
-      $.file_spec,
-      repeat(seq(',', $.file_spec))
-    ),
+  file_group: $ => seq(
+    FILEGROUP,
+    $.id_,
+    optional(seq(CONTAINS, FILESTREAM)),
+    optional(DEFAULT),
+    optional(seq(CONTAINS, MEMORY_OPTIMIZED_DATA)),
+    $.file_spec,
+    repeat(seq(',', $.file_spec))
+  ),
 
-    file_spec: $ => seq(
-      LR_BRACKET,
-      NAME,
-      EQUAL,
-      choice($.id_, STRING),
-      optional(','),
-      FILENAME,
-      EQUAL,
-      field("file", STRING),
-      optional(','),
-      optional(seq(SIZE, EQUAL, $.file_size, optional(','))),
-      optional(seq(MAXSIZE, EQUAL, choice($.file_size, UNLIMITED), optional(','))),
-      optional(seq(FILEGROWTH, EQUAL, $.file_size, optional(','))),
-      RR_BRACKET
-    ),
+  file_spec: $ => seq(
+    LR_BRACKET,
+    NAME,
+    EQUAL,
+    choice($.id_, STRING),
+    optional(','),
+    FILENAME,
+    EQUAL,
+    field("file", STRING),
+    optional(','),
+    optional(seq(SIZE, EQUAL, $.file_size, optional(','))),
+    optional(seq(MAXSIZE, EQUAL, choice($.file_size, UNLIMITED), optional(','))),
+    optional(seq(FILEGROWTH, EQUAL, $.file_size, optional(','))),
+    RR_BRACKET
+  ),
 
-    entity_name: $ => seq(
-      optional(choice(
-        seq(field("server", $.id_), '.', field("database", $.id_), '.', field("schema", $.id_), '.'),
-        seq(field("database", $.id_), '.', optional(field("schema", $.id_)), '.'),
-        seq(field("schema", $.id_), '.')
-      )),
-      field("table", $.id_)
-    ),
+  entity_name: $ => seq(
+    optional(choice(
+      seq(field("server", $.id_), '.', field("database", $.id_), '.', field("schema", $.id_), '.'),
+      seq(field("database", $.id_), '.', optional(field("schema", $.id_)), '.'),
+      seq(field("schema", $.id_), '.')
+    )),
+    field("table", $.id_)
+  ),
 
-    entity_name_for_azure_dw: $ => choice(
-      field("schema", $.id_),
-      seq(field("schema", $.id_), '.', field("object_name", $.id_))
-    ),
+  entity_name_for_azure_dw: $ => choice(
+    field("schema", $.id_),
+    seq(field("schema", $.id_), '.', field("object_name", $.id_))
+  ),
 
-    entity_name_for_parallel_dw: $ => choice(
-      field("schema_database", $.id_),
-      seq(field("schema", $.id_), '.', field("object_name", $.id_))
-    ),
+  entity_name_for_parallel_dw: $ => choice(
+    field("schema_database", $.id_),
+    seq(field("schema", $.id_), '.', field("object_name", $.id_))
+  ),
 
-    full_table_name: $ => seq(
-      optional(choice(
-        seq(field("linkedServer", $.id_), '.', '.', field("schema", $.id_), '.'),
-        seq(field("server", $.id_), '.', field("database", $.id_), '.', field("schema", $.id_), '.'),
-        seq(field("database", $.id_), '.', optional(field("schema", $.id_)), '.'),
-        seq(field("schema", $.id_), '.')
-      )),
-      field("table", $.id_)
-    ),
+  full_table_name: $ => seq(
+    optional(choice(
+      seq(field("linkedServer", $.id_), '.', '.', field("schema", $.id_), '.'),
+      seq(field("server", $.id_), '.', field("database", $.id_), '.', field("schema", $.id_), '.'),
+      seq(field("database", $.id_), '.', optional(field("schema", $.id_)), '.'),
+      seq(field("schema", $.id_), '.')
+    )),
+    field("table", $.id_)
+  ),
 
-    table_name: $ => seq(
-      optional(choice(
-        seq(field("database", $.id_), '.', optional(field("schema", $.id_)), '.'),
-        seq(field("schema", $.id_), '.')
-      )),
-      choice(
-        field("table", $.id_),
-        field("blocking_hierarchy", BLOCKING_HIERARCHY)
-      )
-    ),
+  table_name: $ => seq(
+    optional(choice(
+      seq(field("database", $.id_), '.', optional(field("schema", $.id_)), '.'),
+      seq(field("schema", $.id_), '.')
+    )),
+    choice(
+      field("table", $.id_),
+      field("blocking_hierarchy", BLOCKING_HIERARCHY)
+    )
+  ),
 
-    simple_name: $ => seq(
-      optional(seq(field("schema", $.id_), '.')),
-      field("name", $.id_)
-    ),
+  simple_name: $ => seq(
+    optional(seq(field("schema", $.id_), '.')),
+    field("name", $.id_)
+  ),
 
-    func_proc_name_schema: $ => seq(
-      optional(seq(field("schema", $.id_), '.')),
+  func_proc_name_schema: $ => seq(
+    optional(seq(field("schema", $.id_), '.')),
+    field("procedure", $.id_)
+  ),
+
+  func_proc_name_database_schema: $ => choice(
+    seq(
+      optional(field("database", $.id_)),
+      '.',
+      optional(field("schema", $.id_)),
+      '.',
       field("procedure", $.id_)
     ),
+    $.func_proc_name_schema
+  ),
 
-    func_proc_name_database_schema: $ => choice(
+  func_proc_name_server_database_schema: $ => choice(
+    seq(
+      optional(field("server", $.id_)),
+      '.',
+      optional(field("database", $.id_)),
+      '.',
+      optional(field("schema", $.id_)),
+      '.',
+      field("procedure", $.id_)
+    ),
+    $.func_proc_name_database_schema
+  ),
+
+  ddl_object: $ => choice(
+    $.full_table_name,
+    LOCAL_ID
+  ),
+
+  full_column_name: $ => seq(
+    optional(seq(
+      choice(DELETED, INSERTED, $.full_table_name),
+      '.'
+    )),
+    choice(
+      field("column_name", $.id_),
+      seq('$', choice(IDENTITY, ROWGUID))
+    )
+  ),
+
+  column_name_list_with_order: $ => seq(
+    $.id_,
+    optional(choice(ASC, DESC)),
+    repeat(seq(",", $.id_, optional(choice(ASC, DESC))))
+  ),
+
+  insert_column_name_list: $ => seq(
+    field("col", $.insert_column_id),
+    repeat(
       seq(
-        optional(field("database", $.id_)),
-        '.',
-        optional(field("schema", $.id_)),
-        '.',
-        field("procedure", $.id_)
-      ),
-      $.func_proc_name_schema
-    ),
+        ",",
+        field("col", $.insert_column_id)
+      )
+    )
+  ),
 
-    func_proc_name_server_database_schema: $ => choice(
+  insert_column_id: $ => seq(
+    repeat(
       seq(
-        optional(field("server", $.id_)),
-        '.',
-        optional(field("database", $.id_)),
-        '.',
-        optional(field("schema", $.id_)),
-        '.',
-        field("procedure", $.id_)
-      ),
-      $.func_proc_name_database_schema
-    ),
-
-    ddl_object: $ => choice(
-      $.full_table_name,
-      LOCAL_ID
-    ),
-
-    full_column_name: $ => seq(
-      optional(seq(
-        choice(DELETED, INSERTED, $.full_table_name),
-        '.'
-      )),
-      choice(
-        field("column_name", $.id_),
-        seq('$', choice(IDENTITY, ROWGUID))
+        field("ignore", optional($.id_)),
+        "."
       )
     ),
+    $.id_
+  ),
 
-    column_name_list_with_order: $ => seq(
-      $.id_,
-      optional(choice(ASC, DESC)),
-      repeat(seq(",", $.id_, optional(choice(ASC, DESC))))
-    ),
-
-    insert_column_name_list: $ => seq(
-      field("col", $.insert_column_id),
-      repeat(
-        seq(
-          ",",
-          field("col", $.insert_column_id)
-        )
+  column_name_list: $ => seq(
+    field("col", $.id_),
+    repeat(
+      seq(
+        ",",
+        field("col", $.id_)
       )
-    ),
+    )
+  ),
 
-    insert_column_id: $ => seq(
-      repeat(
-        seq(
-          field("ignore", optional($.id_)),
-          "."
-        )
-      ),
-      $.id_
-    ),
+  cursor_name: $ => choice(
+    $.id_,
+    LOCAL_ID
+  ),
 
-    column_name_list: $ => seq(
-      field("col", $.id_),
-      repeat(
-        seq(
-          ",",
-          field("col", $.id_)
-        )
-      )
-    ),
+  on_off: $ => choice(
+    ON,
+    OFF
+  ),
 
-    cursor_name: $ => choice(
-      $.id_,
-      LOCAL_ID
-    ),
+  clustered: $ => choice(
+    CLUSTERED,
+    NONCLUSTERED
+  ),
 
-    on_off: $ => choice(
-      ON,
-      OFF
-    ),
+  null_notnull: $ => seq(
+    optional(NOT),
+    NULL_
+  ),
 
-    clustered: $ => choice(
-      CLUSTERED,
-      NONCLUSTERED
-    ),
+  scalar_function_name: $ => choice(
+    $.func_proc_name_server_database_schema,
+    RIGHT,
+    LEFT,
+    BINARY_CHECKSUM,
+    CHECKSUM
+  ),
 
-    null_notnull: $ => seq(
-      optional(NOT),
-      NULL_
-    ),
-
-    scalar_function_name: $ => choice(
-      $.func_proc_name_server_database_schema,
-      RIGHT,
-      LEFT,
-      BINARY_CHECKSUM,
-      CHECKSUM
-    ),
-
-    begin_conversation_timer: $ => seq(
-      BEGIN,
-      CONVERSATION,
-      TIMER,
-      "(",
+  begin_conversation_timer: $ => seq(
+    BEGIN,
+    CONVERSATION,
+    TIMER,
+    "(",
       LOCAL_ID,
       ")",
-      TIMEOUT,
-      "=",
-      $.time,
-      optional(";")
-    ),
+    TIMEOUT,
+    "=",
+    $.time,
+    optional(";")
+  ),
 
-    begin_conversation_dialog: $ => seq(
-      BEGIN,
-      DIALOG,
-      optional(CONVERSATION),
-      field("dialog_handle", LOCAL_ID),
-      FROM,
-      SERVICE,
-      field("initiator_service_name", $.service_name),
-      TO,
-      SERVICE,
-      field("target_service_name", $.service_name),
-      optional(seq(',', field("service_broker_guid", STRING))),
-      ON,
-      CONTRACT,
-      field("contract_name", $.contract_name),
+  begin_conversation_dialog: $ => seq(
+    BEGIN,
+    DIALOG,
+    optional(CONVERSATION),
+    field("dialog_handle", LOCAL_ID),
+    FROM,
+    SERVICE,
+    field("initiator_service_name", $.service_name),
+    TO,
+    SERVICE,
+    field("target_service_name", $.service_name),
+    optional(seq(',', field("service_broker_guid", STRING))),
+    ON,
+    CONTRACT,
+    field("contract_name", $.contract_name),
+    optional(seq(
+      WITH,
       optional(seq(
-        WITH,
-        optional(seq(
-          choice(RELATED_CONVERSATION, RELATED_CONVERSATION_GROUP),
-          '=',
-          LOCAL_ID,
-          optional(',')
-        )),
-        optional(seq(
-          LIFETIME,
-          '=',
-          choice(DECIMAL, LOCAL_ID),
-          optional(',')
-        )),
-        optional(seq(
-          ENCRYPTION,
-          '=',
-          $.on_off
-        ))
+        choice(RELATED_CONVERSATION, RELATED_CONVERSATION_GROUP),
+        '=',
+        LOCAL_ID,
+        optional(',')
       )),
-      optional(';')
-    ),
+      optional(seq(
+        LIFETIME,
+        '=',
+        choice(DECIMAL, LOCAL_ID),
+        optional(',')
+      )),
+      optional(seq(
+        ENCRYPTION,
+        '=',
+        $.on_off
+      ))
+    )),
+    optional(';')
+  ),
 
-    contract_name: $ => choice(
-      $.id_,
-      $.expression
-    ),
+  contract_name: $ => choice(
+    $.id_,
+    $.expression
+  ),
 
-    service_name: $ => choice(
-      $.id_,
-      $.expression
-    ),
+  service_name: $ => choice(
+    $.id_,
+    $.expression
+  ),
 
-    end_conversation: $ => seq(
-      END,
-      CONVERSATION,
-      field("conversation_handle", LOCAL_ID),
-      optional(";"),
-      optional(
-        seq(
-          WITH,
-          optional(
-            seq(
-              ERROR,
-              "=",
-              field(
-                "failure_code",
-                choice(LOCAL_ID, STRING)
-              ),
-              DESCRIPTION,
-              "=",
-              field(
-                "failure_text",
-                choice(LOCAL_ID, STRING)
-              )
+  end_conversation: $ => seq(
+    END,
+    CONVERSATION,
+    field("conversation_handle", LOCAL_ID),
+    optional(";"),
+    optional(
+      seq(
+        WITH,
+        optional(
+          seq(
+            ERROR,
+            "=",
+            field(
+              "failure_code",
+              choice(LOCAL_ID, STRING)
+            ),
+            DESCRIPTION,
+            "=",
+            field(
+              "failure_text",
+              choice(LOCAL_ID, STRING)
             )
-          ),
-          optional(CLEANUP)
-        )
+          )
+        ),
+        optional(CLEANUP)
       )
-    ),
+    )
+  ),
 
-    waitfor_conversation: $ => seq(
-      optional(WAITFOR),
-      '(',
+  waitfor_conversation: $ => seq(
+    optional(WAITFOR),
+    '(',
       $.get_conversation,
       ')',
-      optional(seq(
-        optional(','),
-        TIMEOUT,
-        field("timeout", $.time)
-      )),
-      optional(';')
-    ),
+    optional(seq(
+      optional(','),
+      TIMEOUT,
+      field("timeout", $.time)
+    )),
+    optional(';')
+  ),
 
-    get_conversation: $ => seq(
-      GET,
-      CONVERSATION,
-      GROUP,
-      field("conversation_group_id", choice(STRING, LOCAL_ID)),
-      FROM,
-      field("queue", $.queue_id),
-      optional(';')
-    ),
+  get_conversation: $ => seq(
+    GET,
+    CONVERSATION,
+    GROUP,
+    field("conversation_group_id", choice(STRING, LOCAL_ID)),
+    FROM,
+    field("queue", $.queue_id),
+    optional(';')
+  ),
 
-    queue_id: $ => choice(
-      seq(
-        field("database_name", $.id_),
-        '.',
-        field("schema_name", $.id_),
-        '.',
-        field("name", $.id_)
-      ),
-      $.id_
+  queue_id: $ => choice(
+    seq(
+      field("database_name", $.id_),
+      '.',
+      field("schema_name", $.id_),
+      '.',
+      field("name", $.id_)
     ),
+    $.id_
+  ),
 
-    send_conversation: $ => seq(
-      SEND,
-      ON,
-      CONVERSATION,
-      field("conversation_function", choice(STRING, LOCAL_ID)),
-      MESSAGE,
-      TYPE,
-      field("message_type_name", $.expression),
-      optional(seq(
-        '(',
+  send_conversation: $ => seq(
+    SEND,
+    ON,
+    CONVERSATION,
+    field("conversation_function", choice(STRING, LOCAL_ID)),
+    MESSAGE,
+    TYPE,
+    field("message_type_name", $.expression),
+    optional(seq(
+      '(',
         field("message_body_expression", choice(STRING, LOCAL_ID)),
         ')'
-      )),
-      optional(';')
-    ),
+    )),
+    optional(';')
+  ),
 
-    data_type: $ => choice(
-      seq(
-        field('scaled', choice(
-          VARCHAR,
-          NVARCHAR,
-          BINARY,
-          VARBINARY_KEYWORD,
-          SQUARE_BRACKET_ID
-        )),
-        '(',
+  data_type: $ => choice(
+    seq(
+      field('scaled', choice(
+        VARCHAR,
+        NVARCHAR,
+        BINARY,
+        VARBINARY_KEYWORD,
+        SQUARE_BRACKET_ID
+      )),
+      '(',
         token(/MAX/i),
         ')'
-      ),
-      seq(
-        field('ext_type', $.id_),
-        '(',
+    ),
+    seq(
+      field('ext_type', $.id_),
+      '(',
         field('scale', DECIMAL),
         ',',
         field('prec', DECIMAL),
         ')'
-      ),
-      seq(
-        field('ext_type', $.id_),
-        '(',
+    ),
+    seq(
+      field('ext_type', $.id_),
+      '(',
         field('scale', DECIMAL),
         ')'
-      ),
-      seq(
-        field('ext_type', $.id_),
-        IDENTITY,
-        optional(seq(
-          '(',
+    ),
+    seq(
+      field('ext_type', $.id_),
+      IDENTITY,
+      optional(seq(
+        '(',
           field('seed', DECIMAL),
           ',',
           field('inc', DECIMAL),
           ')'
-        ))
-      ),
-      seq(
-        DOUBLE,
-        optional(PRECISION)
-      ),
-
-      field('unscaled_type', $.id_)
+      ))
+    ),
+    seq(
+      DOUBLE,
+      optional(PRECISION)
     ),
 
-    constant: $ => choice(
-      STRING,
-      BINARY,
-      seq(optional('-'), choice(DECIMAL, REAL, FLOAT)),
-      seq(optional('-'), seq(
-        field("dollar", DOLLAR),
-        optional(choice(PLUS, MINUS)),
-        choice(DECIMAL, FLOAT)
-      )),
-      $.parameter
+    field('unscaled_type', $.id_)
+  ),
+
+  constant: $ => choice(
+    STRING,
+    BINARY,
+    seq(optional('-'), choice(DECIMAL, REAL, FLOAT)),
+    seq(optional('-'), seq(
+      field("dollar", DOLLAR),
+      optional(choice(PLUS, MINUS)),
+      choice(DECIMAL, FLOAT)
+    )),
+    $.parameter
+  ),
+
+  primitive_constant: $ => choice(
+    STRING,
+    BINARY,
+    choice(DECIMAL, REAL, FLOAT),
+    seq(
+      field("dollar", DOLLAR),
+      optional(choice(PLUS, MINUS)),
+      choice(DECIMAL, FLOAT)
     ),
+    $.parameter
+  ),
 
-    primitive_constant: $ => choice(
-      STRING,
-      BINARY,
-      choice(DECIMAL, REAL, FLOAT),
-      seq(
-        field("dollar", DOLLAR),
-        optional(choice(PLUS, MINUS)),
-        choice(DECIMAL, FLOAT)
-      ),
-      $.parameter
-    ),
+  keyword: $ => choice(
+    ABORT,
+    ABSOLUTE,
+    ACCENT_SENSITIVITY,
+    ACCESS,
+    ACTION,
+    ACTIVATION,
+    ACTIVE,
+    ADD,
+    ADDRESS,
+    AES_128,
+    AES_192,
+    AES_256,
+    AFFINITY,
+    AFTER,
+    AGGREGATE,
+    ALGORITHM,
+    ALL_CONSTRAINTS,
+    ALL_ERRORMSGS,
+    ALL_INDEXES,
+    ALL_LEVELS,
+    ALLOW_ENCRYPTED_VALUE_MODIFICATIONS,
+    ALLOW_PAGE_LOCKS,
+    ALLOW_ROW_LOCKS,
+    ALLOW_SNAPSHOT_ISOLATION,
+    ALLOWED,
+    ALWAYS,
+    ANSI_DEFAULTS,
+    ANSI_NULL_DEFAULT,
+    ANSI_NULL_DFLT_OFF,
+    ANSI_NULL_DFLT_ON,
+    ANSI_NULLS,
+    ANSI_PADDING,
+    ANSI_WARNINGS,
+    APP_NAME,
+    APPLICATION_LOG,
+    APPLOCK_MODE,
+    APPLOCK_TEST,
+    APPLY,
+    ARITHABORT,
+    ARITHIGNORE,
+    ASCII,
+    ASSEMBLY,
+    ASSEMBLYPROPERTY,
+    AT_KEYWORD,
+    AUDIT,
+    AUDIT_GUID,
+    AUTO,
+    AUTO_CLEANUP,
+    AUTO_CLOSE,
+    AUTO_CREATE_STATISTICS,
+    AUTO_DROP,
+    AUTO_SHRINK,
+    AUTO_UPDATE_STATISTICS,
+    AUTO_UPDATE_STATISTICS_ASYNC,
+    AUTOGROW_ALL_FILES,
+    AUTOGROW_SINGLE_FILE,
+    AVAILABILITY,
+    AVG,
+    BACKUP_CLONEDB,
+    BACKUP_PRIORITY,
+    BASE64,
+    BEGIN_DIALOG,
+    BIGINT,
+    BINARY_KEYWORD,
+    BINARY_CHECKSUM,
+    BINDING,
+    BLOB_STORAGE,
+    BROKER,
+    BROKER_INSTANCE,
+    BULK_LOGGED,
+    CALLER,
+    CAP_CPU_PERCENT,
+    CAST,
+    TRY_CAST,
+    CATALOG,
+    CATCH,
+    CERT_ID,
+    CERTENCODED,
+    CERTPRIVATEKEY,
+    CHANGE,
+    CHANGE_RETENTION,
+    CHANGE_TRACKING,
+    CHAR,
+    CHARINDEX,
+    CHECKALLOC,
+    CHECKCATALOG,
+    CHECKCONSTRAINTS,
+    CHECKDB,
+    CHECKFILEGROUP,
+    CHECKSUM,
+    CHECKSUM_AGG,
+    CHECKTABLE,
+    CLEANTABLE,
+    CLEANUP,
+    CLONEDATABASE,
+    COL_LENGTH,
+    COL_NAME,
+    COLLECTION,
+    COLUMN_ENCRYPTION_KEY,
+    COLUMN_MASTER_KEY,
+    COLUMNPROPERTY,
+    COLUMNS,
+    COLUMNSTORE,
+    COLUMNSTORE_ARCHIVE,
+    COMMITTED,
+    COMPATIBILITY_LEVEL,
+    COMPRESS_ALL_ROW_GROUPS,
+    COMPRESSION_DELAY,
+    CONCAT,
+    CONCAT_WS,
+    CONCAT_NULL_YIELDS_NULL,
+    CONTENT,
+    CONTROL,
+    COOKIE,
+    COUNT,
+    COUNT_BIG,
+    COUNTER,
+    CPU,
+    CREATE_NEW,
+    CREATION_DISPOSITION,
+    CREDENTIAL,
+    CRYPTOGRAPHIC,
+    CUME_DIST,
+    CURSOR_CLOSE_ON_COMMIT,
+    CURSOR_DEFAULT,
+    CURSOR_STATUS,
+    DATA,
+    DATA_PURITY,
+    DATABASE_PRINCIPAL_ID,
+    DATABASEPROPERTYEX,
+    DATALENGTH,
+    DATE_CORRELATION_OPTIMIZATION,
+    DATEADD,
+    DATEDIFF,
+    DATENAME,
+    DATEPART,
+    DAYS,
+    DB_CHAINING,
+    DB_FAILOVER,
+    DB_ID,
+    DB_NAME,
+    DBCC,
+    DBREINDEX,
+    DECRYPTION,
+    DEFAULT_DOUBLE_QUOTE,
+    DEFAULT_FULLTEXT_LANGUAGE,
+    DEFAULT_LANGUAGE,
+    DEFINITION,
+    DELAY,
+    DELAYED_DURABILITY,
+    DELETED,
+    DENSE_RANK,
+    DEPENDENTS,
+    DES,
+    DESCRIPTION,
+    DESX,
+    DETERMINISTIC,
+    DHCP,
+    DIALOG,
+    DIFFERENCE,
+    DIRECTORY_NAME,
+    DISABLE,
+    DISABLE_BROKER,
+    DISABLED,
+    DOCUMENT,
+    DROP_EXISTING,
+    DROPCLEANBUFFERS,
+    DYNAMIC,
+    ELEMENTS,
+    EMERGENCY,
+    EMPTY,
+    ENABLE,
+    ENABLE_BROKER,
+    ENCRYPTED,
+    ENCRYPTED_VALUE,
+    ENCRYPTION,
+    ENCRYPTION_TYPE,
+    ENDPOINT_URL,
+    ERROR_BROKER_CONVERSATIONS,
+    ESTIMATEONLY,
+    EXCLUSIVE,
+    EXECUTABLE,
+    EXIST,
+    EXIST_SQUARE_BRACKET,
+    EXPAND,
+    EXPIRY_DATE,
+    EXPLICIT,
+    EXTENDED_LOGICAL_CHECKS,
+    FAIL_OPERATION,
+    FAILOVER_MODE,
+    FAILURE,
+    FAILURE_CONDITION_LEVEL,
+    FAST,
+    FAST_FORWARD,
+    FILE_ID,
+    FILE_IDEX,
+    FILE_NAME,
+    FILEGROUP,
+    FILEGROUP_ID,
+    FILEGROUP_NAME,
+    FILEGROUPPROPERTY,
+    FILEGROWTH,
+    FILENAME,
+    FILEPATH,
+    FILEPROPERTY,
+    FILEPROPERTYEX,
+    FILESTREAM,
+    FILTER,
+    FIRST,
+    FIRST_VALUE,
+    FMTONLY,
+    FOLLOWING,
+    FORCE,
+    FORCE_FAILOVER_ALLOW_DATA_LOSS,
+    FORCED,
+    FORCEPLAN,
+    FORCESCAN,
+    FORMAT,
+    FORWARD_ONLY,
+    FREE,
+    FULLSCAN,
+    FULLTEXT,
+    FULLTEXTCATALOGPROPERTY,
+    FULLTEXTSERVICEPROPERTY,
+    GB,
+    GENERATED,
+    GETDATE,
+    GETUTCDATE,
+    GLOBAL,
+    GO,
+    GREATEST,
+    GROUP_MAX_REQUESTS,
+    GROUPING,
+    GROUPING_ID,
+    HADR,
+    HAS_DBACCESS,
+    HAS_PERMS_BY_NAME,
+    HASH,
+    HEALTH_CHECK_TIMEOUT,
+    HIDDEN_KEYWORD,
+    HIGH,
+    HONOR_BROKER_PRIORITY,
+    HOURS,
+    IDENT_CURRENT,
+    IDENT_INCR,
+    IDENT_SEED,
+    IDENTITY_VALUE,
+    IGNORE_CONSTRAINTS,
+    IGNORE_DUP_KEY,
+    IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX,
+    IGNORE_REPLICATED_TABLE_CACHE,
+    IGNORE_TRIGGERS,
+    IMMEDIATE,
+    IMPERSONATE,
+    IMPLICIT_TRANSACTIONS,
+    IMPORTANCE,
+    INCLUDE_NULL_VALUES,
+    INCREMENTAL,
+    INDEX_COL,
+    INDEXKEY_PROPERTY,
+    INDEXPROPERTY,
+    INITIATOR,
+    INPUT,
+    INSENSITIVE,
+    INSERTED,
+    INT,
+    IP,
+    IS_MEMBER,
+    IS_ROLEMEMBER,
+    IS_SRVROLEMEMBER,
+    ISJSON,
+    ISOLATION,
+    JOB,
+    JSON,
+    JSON_OBJECT,
+    JSON_ARRAY,
+    JSON_VALUE,
+    JSON_QUERY,
+    JSON_MODIFY,
+    JSON_PATH_EXISTS,
+    KB,
+    KEEP,
+    KEEPDEFAULTS,
+    KEEPFIXED,
+    KEEPIDENTITY,
+    KEY_SOURCE,
+    KEYS,
+    KEYSET,
+    LAG,
+    LAST,
+    LAST_VALUE,
+    LEAD,
+    LEAST,
+    LEN,
+    LEVEL,
+    LIST,
+    LISTENER,
+    LISTENER_URL,
+    LOB_COMPACTION,
+    LOCAL,
+    LOCATION,
+    LOCK,
+    LOCK_ESCALATION,
+    LOGIN,
+    LOGINPROPERTY,
+    LOOP,
+    LOW,
+    LOWER,
+    LTRIM,
+    MANUAL,
+    MARK,
+    MASKED,
+    MATERIALIZED,
+    MAX,
+    MAX_CPU_PERCENT,
+    MAX_DOP,
+    MAX_FILES,
+    MAX_IOPS_PER_VOLUME,
+    MAX_MEMORY_PERCENT,
+    MAX_PROCESSES,
+    MAX_QUEUE_READERS,
+    MAX_ROLLOVER_FILES,
+    MAXDOP,
+    MAXRECURSION,
+    MAXSIZE,
+    MB,
+    MEDIUM,
+    MEMORY_OPTIMIZED_DATA,
+    MESSAGE,
+    MIN,
+    MIN_ACTIVE_ROWVERSION,
+    MIN_CPU_PERCENT,
+    MIN_IOPS_PER_VOLUME,
+    MIN_MEMORY_PERCENT,
+    MINUTES,
+    MIRROR_ADDRESS,
+    MIXED_PAGE_ALLOCATION,
+    MODE,
+    MODIFY,
+    MODIFY_SQUARE_BRACKET,
+    MOVE,
+    MULTI_USER,
+    NAME,
+    NCHAR,
+    NESTED_TRIGGERS,
+    NEW_ACCOUNT,
+    NEW_BROKER,
+    NEW_PASSWORD,
+    NEWNAME,
+    NEXT,
+    NO,
+    NO_INFOMSGS,
+    NO_QUERYSTORE,
+    NO_STATISTICS,
+    NO_TRUNCATE,
+    NO_WAIT,
+    NOCOUNT,
+    NODES,
+    NOEXEC,
+    NOEXPAND,
+    NOINDEX,
+    NOLOCK,
+    NON_TRANSACTED_ACCESS,
+    NORECOMPUTE,
+    NORECOVERY,
+    NOTIFICATIONS,
+    NOWAIT,
+    NTILE,
+    NULL_DOUBLE_QUOTE,
+    NUMANODE,
+    NUMBER,
+    NUMERIC_ROUNDABORT,
+    OBJECT,
+    OBJECT_DEFINITION,
+    OBJECT_ID,
+    OBJECT_NAME,
+    OBJECT_SCHEMA_NAME,
+    OBJECTPROPERTY,
+    OBJECTPROPERTYEX,
+    OFFLINE,
+    OFFSET,
+    OLD_ACCOUNT,
+    ONLINE,
+    ONLY,
+    OPEN_EXISTING,
+    OPENJSON,
+    OPTIMISTIC,
+    OPTIMIZE,
+    OPTIMIZE_FOR_SEQUENTIAL_KEY,
+    ORIGINAL_DB_NAME,
+    ORIGINAL_LOGIN,
+    OUT,
+    OUTPUT,
+    OVERRIDE,
+    OWNER,
+    OWNERSHIP,
+    PAD_INDEX,
+    PAGE_VERIFY,
+    PAGECOUNT,
+    PAGLOCK,
+    PARAMETERIZATION,
+    PARSENAME,
+    PARSEONLY,
+    PARTITION,
+    PARTITIONS,
+    PARTNER,
+    PATH,
+    PATINDEX,
+    PAUSE,
+    PDW_SHOWSPACEUSED,
+    PERCENT_RANK,
+    PERCENTILE_CONT,
+    PERCENTILE_DISC,
+    PERMISSIONS,
+    PERSIST_SAMPLE_PERCENT,
+    PHYSICAL_ONLY,
+    POISON_MESSAGE_HANDLING,
+    POOL,
+    PORT,
+    PRECEDING,
+    PRIMARY_ROLE,
+    PRIOR,
+    PRIORITY,
+    PRIORITY_LEVEL,
+    PRIVATE,
+    PRIVATE_KEY,
+    PRIVILEGES,
+    PROCCACHE,
+    PROCEDURE_NAME,
+    PROPERTY,
+    PROVIDER,
+    PROVIDER_KEY_NAME,
+    PWDCOMPARE,
+    PWDENCRYPT,
+    QUERY,
+    QUERY_SQUARE_BRACKET,
+    QUEUE,
+    QUEUE_DELAY,
+    QUOTED_IDENTIFIER,
+    QUOTENAME,
+    RANDOMIZED,
+    RANGE,
+    RANK,
+    RC2,
+    RC4,
+    RC4_128,
+    READ_COMMITTED_SNAPSHOT,
+    READ_ONLY,
+    READ_ONLY_ROUTING_LIST,
+    READ_WRITE,
+    READCOMMITTED,
+    READCOMMITTEDLOCK,
+    READONLY,
+    READPAST,
+    READUNCOMMITTED,
+    READWRITE,
+    REBUILD,
+    RECEIVE,
+    RECOMPILE,
+    RECOVERY,
+    RECURSIVE_TRIGGERS,
+    RELATIVE,
+    REMOTE,
+    REMOTE_PROC_TRANSACTIONS,
+    REMOTE_SERVICE_NAME,
+    REMOVE,
+    REORGANIZE,
+    REPAIR_ALLOW_DATA_LOSS,
+    REPAIR_FAST,
+    REPAIR_REBUILD,
+    REPEATABLE,
+    REPEATABLEREAD,
+    REPLACE,
+    REPLICA,
+    REPLICATE,
+    REQUEST_MAX_CPU_TIME_SEC,
+    REQUEST_MAX_MEMORY_GRANT_PERCENT,
+    REQUEST_MEMORY_GRANT_TIMEOUT_SEC,
+    REQUIRED_SYNCHRONIZED_SECONDARIES_TO_COMMIT,
+    RESAMPLE,
+    RESERVE_DISK_SPACE,
+    RESOURCE,
+    RESOURCE_MANAGER_LOCATION,
+    RESTRICTED_USER,
+    RESUMABLE,
+    RETENTION,
+    REVERSE,
+    ROBUST,
+    ROOT,
+    ROUTE,
+    ROW,
+    ROW_NUMBER,
+    ROWGUID,
+    ROWLOCK,
+    ROWS,
+    RTRIM,
+    SAMPLE,
+    SCHEMA_ID,
+    SCHEMA_NAME,
+    SCHEMABINDING,
+    SCOPE_IDENTITY,
+    SCOPED,
+    SCROLL,
+    SCROLL_LOCKS,
+    SEARCH,
+    SECONDARY,
+    SECONDARY_ONLY,
+    SECONDARY_ROLE,
+    SECONDS,
+    SECRET,
+    SECURABLES,
+    SECURITY,
+    SECURITY_LOG,
+    SEEDING_MODE,
+    SELF,
+    SEMI_SENSITIVE,
+    SEND,
+    SENT,
+    SEQUENCE,
+    SEQUENCE_NUMBER,
+    SERIALIZABLE,
+    SERVERPROPERTY,
+    SERVICEBROKER,
+    SESSIONPROPERTY,
+    SESSION_TIMEOUT,
+    SETERROR,
+    SHARE,
+    SHARED,
+    SHOWCONTIG,
+    SHOWPLAN,
+    SHOWPLAN_ALL,
+    SHOWPLAN_TEXT,
+    SHOWPLAN_XML,
+    SIGNATURE,
+    SIMPLE,
+    SINGLE_USER,
+    SIZE,
+    SMALLINT,
+    SNAPSHOT,
+    SORT_IN_TEMPDB,
+    SOUNDEX,
+    SPACE_KEYWORD,
+    SPARSE,
+    SPATIAL_WINDOW_MAX_CELLS,
+    SQL_VARIANT_PROPERTY,
+    STANDBY,
+    START_DATE,
+    STATIC,
+    STATISTICS_INCREMENTAL,
+    STATISTICS_NORECOMPUTE,
+    STATS_DATE,
+    STATS_STREAM,
+    STATUS,
+    STATUSONLY,
+    STDEV,
+    STDEVP,
+    STOPLIST,
+    STR,
+    STRING_AGG,
+    STRING_ESCAPE,
+    STUFF,
+    SUBJECT,
+    SUBSCRIBE,
+    SUBSCRIPTION,
+    SUBSTRING,
+    SUM,
+    SUSER_ID,
+    SUSER_NAME,
+    SUSER_SID,
+    SUSER_SNAME,
+    SUSPEND,
+    SYMMETRIC,
+    SYNCHRONOUS_COMMIT,
+    SYNONYM,
+    SYSTEM,
+    TABLERESULTS,
+    TABLOCK,
+    TABLOCKX,
+    TAKE,
+    TARGET_RECOVERY_TIME,
+    TB,
+    TEXTIMAGE_ON,
+    THROW,
+    TIES,
+    TIME,
+    TIMEOUT,
+    TIMER,
+    TINYINT,
+    TORN_PAGE_DETECTION,
+    TRACKING,
+    TRANSACTION_ID,
+    TRANSFORM_NOISE_WORDS,
+    TRANSLATE,
+    TRIM,
+    TRIPLE_DES,
+    TRIPLE_DES_3KEY,
+    TRUSTWORTHY,
+    TRY,
+    TSQL,
+    TWO_DIGIT_YEAR_CUTOFF,
+    TYPE,
+    TYPE_ID,
+    TYPE_NAME,
+    TYPE_WARNING,
+    TYPEPROPERTY,
+    UNBOUNDED,
+    UNCOMMITTED,
+    UNICODE,
+    UNKNOWN,
+    UNLIMITED,
+    UNMASK,
+    UOW,
+    UPDLOCK,
+    UPPER,
+    USER_ID,
+    USER_NAME,
+    USING,
+    VALID_XML,
+    VALIDATION,
+    VALUE,
+    VALUE_SQUARE_BRACKET,
+    VAR,
+    VARBINARY_KEYWORD,
+    VARP,
+    VERIFY_CLONEDB,
+    VERSION,
+    VIEW_METADATA,
+    VIEWS,
+    WAIT,
+    WELL_FORMED_XML,
+    WITHOUT_ARRAY_WRAPPER,
+    WORK,
+    WORKLOAD,
+    XLOCK,
+    XML,
+    XML_COMPRESSION,
+    XMLDATA,
+    XMLNAMESPACES,
+    XMLSCHEMA,
+    XSINIL,
+    ZONE,
+    // More keywords that can also be used as IDs
+    ABORT_AFTER_WAIT,
+    ABSENT,
+    ADMINISTER,
+    AES,
+    ALLOW_CONNECTIONS,
+    ALLOW_MULTIPLE_EVENT_LOSS,
+    ALLOW_SINGLE_EVENT_LOSS,
+    ANONYMOUS,
+    APPEND,
+    APPLICATION,
+    ASYMMETRIC,
+    ASYNCHRONOUS_COMMIT,
+    AUTHENTICATE,
+    AUTHENTICATION,
+    AUTOMATED_BACKUP_PREFERENCE,
+    AUTOMATIC,
+    AVAILABILITY_MODE,
+    BEFORE,
+    BLOCK,
+    BLOCKERS,
+    BLOCKSIZE,
+    BLOCKING_HIERARCHY,
+    BUFFER,
+    BUFFERCOUNT,
+    CACHE,
+    CALLED,
+    CERTIFICATE,
+    CHANGETABLE,
+    CHANGES,
+    CHECK_POLICY,
+    CHECK_EXPIRATION,
+    CLASSIFIER_FUNCTION,
+    CLUSTER,
+    COMPRESS,
+    COMPRESSION,
+    CONNECT,
+    CONNECTION,
+    CONFIGURATION,
+    CONNECTIONPROPERTY,
+    CONTAINMENT,
+    CONTEXT,
+    CONTEXT_INFO,
+    CONTINUE_AFTER_ERROR,
+    CONTRACT,
+    CONTRACT_NAME,
+    CONVERSATION,
+    COPY_ONLY,
+    CURRENT_REQUEST_ID,
+    CURRENT_TRANSACTION_ID,
+    CYCLE,
+    DATA_COMPRESSION,
+    DATA_SOURCE,
+    DATABASE_MIRRORING,
+    DATASPACE,
+    DDL,
+    DECOMPRESS,
+    DEFAULT_DATABASE,
+    DEFAULT_SCHEMA,
+    DIAGNOSTICS,
+    DIFFERENTIAL,
+    DISTRIBUTION,
+    DTC_SUPPORT,
+    ENABLED,
+    ENDPOINT,
+    ERROR,
+    ERROR_LINE,
+    ERROR_MESSAGE,
+    ERROR_NUMBER,
+    ERROR_PROCEDURE,
+    ERROR_SEVERITY,
+    ERROR_STATE,
+    EVENT,
+    EVENTDATA,
+    EVENT_RETENTION_MODE,
+    EXECUTABLE_FILE,
+    EXPIREDATE,
+    EXTENSION,
+    EXTERNAL_ACCESS,
+    FAILOVER,
+    FAILURECONDITIONLEVEL,
+    FAN_IN,
+    FILE_SNAPSHOT,
+    FORCESEEK,
+    FORCE_SERVICE_ALLOW_DATA_LOSS,
+    FORMATMESSAGE,
+    GET,
+    GET_FILESTREAM_TRANSACTION_CONTEXT,
+    GETANCESTOR,
+    GETANSINULL,
+    GETDESCENDANT,
+    GETLEVEL,
+    GETREPARENTEDVALUE,
+    GETROOT,
+    GOVERNOR,
+    HASHED,
+    HEALTHCHECKTIMEOUT,
+    HEAP,
+    HIERARCHYID,
+    HOST_ID,
+    HOST_NAME,
+    IIF,
+    IO,
+    INCLUDE,
+    INCREMENT,
+    INFINITE,
+    INIT,
+    INSTEAD,
+    ISDESCENDANTOF,
+    ISNULL,
+    ISNUMERIC,
+    KERBEROS,
+    KEY_PATH,
+    KEY_STORE_PROVIDER_NAME,
+    LANGUAGE,
+    LIBRARY,
+    LIFETIME,
+    LINKED,
+    LINUX,
+    LISTENER_IP,
+    LISTENER_PORT,
+    LOCAL_SERVICE_NAME,
+    LOG,
+    MASK,
+    MATCHED,
+    MASTER,
+    MAX_MEMORY,
+    MAXTRANSFER,
+    MAXVALUE,
+    MAX_DISPATCH_LATENCY,
+    MAX_DURATION,
+    MAX_EVENT_SIZE,
+    MAX_SIZE,
+    MAX_OUTSTANDING_IO_PER_VOLUME,
+    MEDIADESCRIPTION,
+    MEDIANAME,
+    MEMBER,
+    MEMORY_PARTITION_MODE,
+    MESSAGE_FORWARDING,
+    MESSAGE_FORWARD_SIZE,
+    MINVALUE,
+    MIRROR,
+    MUST_CHANGE,
+    NEWID,
+    NEWSEQUENTIALID,
+    NOFORMAT,
+    NOINIT,
+    NONE,
+    NOREWIND,
+    NOSKIP,
+    NOUNLOAD,
+    NO_CHECKSUM,
+    NO_COMPRESSION,
+    NO_EVENT_LOSS,
+    NOTIFICATION,
+    NTLM,
+    OLD_PASSWORD,
+    ON_FAILURE,
+    OPERATIONS,
+    PAGE,
+    PARAM_NODE,
+    PARTIAL,
+    PASSWORD,
+    PERMISSION_SET,
+    PER_CPU,
+    PER_DB,
+    PER_NODE,
+    PERSISTED,
+    PLATFORM,
+    POLICY,
+    PREDICATE,
+    PROCESS,
+    PROFILE,
+    PYTHON,
+    R,
+    READ_WRITE_FILEGROUPS,
+    REGENERATE,
+    RELATED_CONVERSATION,
+    RELATED_CONVERSATION_GROUP,
+    REQUIRED,
+    RESET,
+    RESOURCES,
+    RESTART,
+    RESUME,
+    RETAINDAYS,
+    RETURNS,
+    REWIND,
+    ROLE,
+    ROUND_ROBIN,
+    ROWCOUNT_BIG,
+    RSA_512,
+    RSA_1024,
+    RSA_2048,
+    RSA_3072,
+    RSA_4096,
+    SAFETY,
+    SAFE,
+    SCHEDULER,
+    SCHEME,
+    SCRIPT,
+    SERVER,
+    SERVICE,
+    SERVICE_BROKER,
+    SERVICE_NAME,
+    SESSION,
+    SESSION_CONTEXT,
+    SETTINGS,
+    SHRINKLOG,
+    SID,
+    SKIP_KEYWORD,
+    SOFTNUMA,
+    SOURCE,
+    SPECIFICATION,
+    SPLIT,
+    SQL,
+    SQLDUMPERFLAGS,
+    SQLDUMPERPATH,
+    SQLDUMPERTIMEOUT,
+    STATE,
+    STATS,
+    START,
+    STARTED,
+    STARTUP_STATE,
+    STOP,
+    STOPPED,
+    STOP_ON_ERROR,
+    SUPPORTED,
+    SWITCH,
+    TAPE,
+    TARGET,
+    TCP,
+    TOSTRING,
+    TRACE,
+    TRACK_CAUSALITY,
+    TRANSFER,
+    UNCHECKED,
+    UNLOCK,
+    UNSAFE,
+    URL,
+    USED,
+    VERBOSELOGGING,
+    VISIBILITY,
+    WAIT_AT_LOW_PRIORITY,
+    WINDOWS,
+    WITHOUT,
+    WITNESS,
+    XACT_ABORT,
+    XACT_STATE,
+    //
+    ABS,
+    ACOS,
+    ASIN,
+    ATAN,
+    ATN2,
+    CEILING,
+    COS,
+    COT,
+    DEGREES,
+    EXP,
+    FLOOR,
+    LOG10,
+    PI,
+    POWER,
+    RADIANS,
+    RAND,
+    ROUND,
+    SIGN,
+    SIN,
+    SQRT,
+    SQUARE,
+    TAN,
+    //
+    CURRENT_TIMEZONE,
+    CURRENT_TIMEZONE_ID,
+    DATE_BUCKET,
+    DATEDIFF_BIG,
+    DATEFROMPARTS,
+    DATETIME2FROMPARTS,
+    DATETIMEFROMPARTS,
+    DATETIMEOFFSETFROMPARTS,
+    DATETRUNC,
+    DAY,
+    EOMONTH,
+    ISDATE,
+    MONTH,
+    SMALLDATETIMEFROMPARTS,
+    SWITCHOFFSET,
+    SYSDATETIME,
+    SYSDATETIMEOFFSET,
+    SYSUTCDATETIME,
+    TIMEFROMPARTS,
+    TODATETIMEOFFSET,
+    YEAR,
+    //
+    QUARTER,
+    DAYOFYEAR,
+    WEEK,
+    HOUR,
+    MINUTE,
+    SECOND,
+    MILLISECOND,
+    MICROSECOND,
+    NANOSECOND,
+    TZOFFSET,
+    ISO_WEEK,
+    WEEKDAY,
+    //
+    YEAR_ABBR,
+    QUARTER_ABBR,
+    MONTH_ABBR,
+    DAYOFYEAR_ABBR,
+    DAY_ABBR,
+    WEEK_ABBR,
+    HOUR_ABBR,
+    MINUTE_ABBR,
+    SECOND_ABBR,
+    MILLISECOND_ABBR,
+    MICROSECOND_ABBR,
+    NANOSECOND_ABBR,
+    TZOFFSET_ABBR,
+    ISO_WEEK_ABBR,
+    WEEKDAY_ABBR,
+    //
+    SP_EXECUTESQL,
+    // Built-ins
+    VARCHAR,
+    NVARCHAR,
+    PRECISION, // https://github.com/antlr/grammars-v4/blob/master/sql/tsql/TSqlParser.g4#L6257
+    FILESTREAM_ON,
+  ),
 
-    keyword: $ => choice(
-      ABORT,
-      ABSOLUTE,
-      ACCENT_SENSITIVITY,
-      ACCESS,
-      ACTION,
-      ACTIVATION,
-      ACTIVE,
-      ADD,
-      ADDRESS,
-      AES_128,
-      AES_192,
-      AES_256,
-      AFFINITY,
-      AFTER,
-      AGGREGATE,
-      ALGORITHM,
-      ALL_CONSTRAINTS,
-      ALL_ERRORMSGS,
-      ALL_INDEXES,
-      ALL_LEVELS,
-      ALLOW_ENCRYPTED_VALUE_MODIFICATIONS,
-      ALLOW_PAGE_LOCKS,
-      ALLOW_ROW_LOCKS,
-      ALLOW_SNAPSHOT_ISOLATION,
-      ALLOWED,
-      ALWAYS,
-      ANSI_DEFAULTS,
-      ANSI_NULL_DEFAULT,
-      ANSI_NULL_DFLT_OFF,
-      ANSI_NULL_DFLT_ON,
-      ANSI_NULLS,
-      ANSI_PADDING,
-      ANSI_WARNINGS,
-      APP_NAME,
-      APPLICATION_LOG,
-      APPLOCK_MODE,
-      APPLOCK_TEST,
-      APPLY,
-      ARITHABORT,
-      ARITHIGNORE,
-      ASCII,
-      ASSEMBLY,
-      ASSEMBLYPROPERTY,
-      AT_KEYWORD,
-      AUDIT,
-      AUDIT_GUID,
-      AUTO,
-      AUTO_CLEANUP,
-      AUTO_CLOSE,
-      AUTO_CREATE_STATISTICS,
-      AUTO_DROP,
-      AUTO_SHRINK,
-      AUTO_UPDATE_STATISTICS,
-      AUTO_UPDATE_STATISTICS_ASYNC,
-      AUTOGROW_ALL_FILES,
-      AUTOGROW_SINGLE_FILE,
-      AVAILABILITY,
-      AVG,
-      BACKUP_CLONEDB,
-      BACKUP_PRIORITY,
-      BASE64,
-      BEGIN_DIALOG,
-      BIGINT,
-      BINARY_KEYWORD,
-      BINARY_CHECKSUM,
-      BINDING,
-      BLOB_STORAGE,
-      BROKER,
-      BROKER_INSTANCE,
-      BULK_LOGGED,
-      CALLER,
-      CAP_CPU_PERCENT,
-      CAST,
-      TRY_CAST,
-      CATALOG,
-      CATCH,
-      CERT_ID,
-      CERTENCODED,
-      CERTPRIVATEKEY,
-      CHANGE,
-      CHANGE_RETENTION,
-      CHANGE_TRACKING,
-      CHAR,
-      CHARINDEX,
-      CHECKALLOC,
-      CHECKCATALOG,
-      CHECKCONSTRAINTS,
-      CHECKDB,
-      CHECKFILEGROUP,
-      CHECKSUM,
-      CHECKSUM_AGG,
-      CHECKTABLE,
-      CLEANTABLE,
-      CLEANUP,
-      CLONEDATABASE,
-      COL_LENGTH,
-      COL_NAME,
-      COLLECTION,
-      COLUMN_ENCRYPTION_KEY,
-      COLUMN_MASTER_KEY,
-      COLUMNPROPERTY,
-      COLUMNS,
-      COLUMNSTORE,
-      COLUMNSTORE_ARCHIVE,
-      COMMITTED,
-      COMPATIBILITY_LEVEL,
-      COMPRESS_ALL_ROW_GROUPS,
-      COMPRESSION_DELAY,
-      CONCAT,
-      CONCAT_WS,
-      CONCAT_NULL_YIELDS_NULL,
-      CONTENT,
-      CONTROL,
-      COOKIE,
-      COUNT,
-      COUNT_BIG,
-      COUNTER,
-      CPU,
-      CREATE_NEW,
-      CREATION_DISPOSITION,
-      CREDENTIAL,
-      CRYPTOGRAPHIC,
-      CUME_DIST,
-      CURSOR_CLOSE_ON_COMMIT,
-      CURSOR_DEFAULT,
-      CURSOR_STATUS,
-      DATA,
-      DATA_PURITY,
-      DATABASE_PRINCIPAL_ID,
-      DATABASEPROPERTYEX,
-      DATALENGTH,
-      DATE_CORRELATION_OPTIMIZATION,
-      DATEADD,
-      DATEDIFF,
-      DATENAME,
-      DATEPART,
-      DAYS,
-      DB_CHAINING,
-      DB_FAILOVER,
-      DB_ID,
-      DB_NAME,
-      DBCC,
-      DBREINDEX,
-      DECRYPTION,
-      DEFAULT_DOUBLE_QUOTE,
-      DEFAULT_FULLTEXT_LANGUAGE,
-      DEFAULT_LANGUAGE,
-      DEFINITION,
-      DELAY,
-      DELAYED_DURABILITY,
-      DELETED,
-      DENSE_RANK,
-      DEPENDENTS,
-      DES,
-      DESCRIPTION,
-      DESX,
-      DETERMINISTIC,
-      DHCP,
-      DIALOG,
-      DIFFERENCE,
-      DIRECTORY_NAME,
-      DISABLE,
-      DISABLE_BROKER,
-      DISABLED,
-      DOCUMENT,
-      DROP_EXISTING,
-      DROPCLEANBUFFERS,
-      DYNAMIC,
-      ELEMENTS,
-      EMERGENCY,
-      EMPTY,
-      ENABLE,
-      ENABLE_BROKER,
-      ENCRYPTED,
-      ENCRYPTED_VALUE,
-      ENCRYPTION,
-      ENCRYPTION_TYPE,
-      ENDPOINT_URL,
-      ERROR_BROKER_CONVERSATIONS,
-      ESTIMATEONLY,
-      EXCLUSIVE,
-      EXECUTABLE,
-      EXIST,
-      EXIST_SQUARE_BRACKET,
-      EXPAND,
-      EXPIRY_DATE,
-      EXPLICIT,
-      EXTENDED_LOGICAL_CHECKS,
-      FAIL_OPERATION,
-      FAILOVER_MODE,
-      FAILURE,
-      FAILURE_CONDITION_LEVEL,
-      FAST,
-      FAST_FORWARD,
-      FILE_ID,
-      FILE_IDEX,
-      FILE_NAME,
-      FILEGROUP,
-      FILEGROUP_ID,
-      FILEGROUP_NAME,
-      FILEGROUPPROPERTY,
-      FILEGROWTH,
-      FILENAME,
-      FILEPATH,
-      FILEPROPERTY,
-      FILEPROPERTYEX,
-      FILESTREAM,
-      FILTER,
-      FIRST,
-      FIRST_VALUE,
-      FMTONLY,
-      FOLLOWING,
-      FORCE,
-      FORCE_FAILOVER_ALLOW_DATA_LOSS,
-      FORCED,
-      FORCEPLAN,
-      FORCESCAN,
-      FORMAT,
-      FORWARD_ONLY,
-      FREE,
-      FULLSCAN,
-      FULLTEXT,
-      FULLTEXTCATALOGPROPERTY,
-      FULLTEXTSERVICEPROPERTY,
-      GB,
-      GENERATED,
-      GETDATE,
-      GETUTCDATE,
-      GLOBAL,
-      GO,
-      GREATEST,
-      GROUP_MAX_REQUESTS,
-      GROUPING,
-      GROUPING_ID,
-      HADR,
-      HAS_DBACCESS,
-      HAS_PERMS_BY_NAME,
-      HASH,
-      HEALTH_CHECK_TIMEOUT,
-      HIDDEN_KEYWORD,
-      HIGH,
-      HONOR_BROKER_PRIORITY,
-      HOURS,
-      IDENT_CURRENT,
-      IDENT_INCR,
-      IDENT_SEED,
-      IDENTITY_VALUE,
-      IGNORE_CONSTRAINTS,
-      IGNORE_DUP_KEY,
-      IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX,
-      IGNORE_REPLICATED_TABLE_CACHE,
-      IGNORE_TRIGGERS,
-      IMMEDIATE,
-      IMPERSONATE,
-      IMPLICIT_TRANSACTIONS,
-      IMPORTANCE,
-      INCLUDE_NULL_VALUES,
-      INCREMENTAL,
-      INDEX_COL,
-      INDEXKEY_PROPERTY,
-      INDEXPROPERTY,
-      INITIATOR,
-      INPUT,
-      INSENSITIVE,
-      INSERTED,
-      INT,
-      IP,
-      IS_MEMBER,
-      IS_ROLEMEMBER,
-      IS_SRVROLEMEMBER,
-      ISJSON,
-      ISOLATION,
-      JOB,
-      JSON,
-      JSON_OBJECT,
-      JSON_ARRAY,
-      JSON_VALUE,
-      JSON_QUERY,
-      JSON_MODIFY,
-      JSON_PATH_EXISTS,
-      KB,
-      KEEP,
-      KEEPDEFAULTS,
-      KEEPFIXED,
-      KEEPIDENTITY,
-      KEY_SOURCE,
-      KEYS,
-      KEYSET,
-      LAG,
-      LAST,
-      LAST_VALUE,
-      LEAD,
-      LEAST,
-      LEN,
-      LEVEL,
-      LIST,
-      LISTENER,
-      LISTENER_URL,
-      LOB_COMPACTION,
-      LOCAL,
-      LOCATION,
-      LOCK,
-      LOCK_ESCALATION,
-      LOGIN,
-      LOGINPROPERTY,
-      LOOP,
-      LOW,
-      LOWER,
-      LTRIM,
-      MANUAL,
-      MARK,
-      MASKED,
-      MATERIALIZED,
-      MAX,
-      MAX_CPU_PERCENT,
-      MAX_DOP,
-      MAX_FILES,
-      MAX_IOPS_PER_VOLUME,
-      MAX_MEMORY_PERCENT,
-      MAX_PROCESSES,
-      MAX_QUEUE_READERS,
-      MAX_ROLLOVER_FILES,
-      MAXDOP,
-      MAXRECURSION,
-      MAXSIZE,
-      MB,
-      MEDIUM,
-      MEMORY_OPTIMIZED_DATA,
-      MESSAGE,
-      MIN,
-      MIN_ACTIVE_ROWVERSION,
-      MIN_CPU_PERCENT,
-      MIN_IOPS_PER_VOLUME,
-      MIN_MEMORY_PERCENT,
-      MINUTES,
-      MIRROR_ADDRESS,
-      MIXED_PAGE_ALLOCATION,
-      MODE,
-      MODIFY,
-      MODIFY_SQUARE_BRACKET,
-      MOVE,
-      MULTI_USER,
-      NAME,
-      NCHAR,
-      NESTED_TRIGGERS,
-      NEW_ACCOUNT,
-      NEW_BROKER,
-      NEW_PASSWORD,
-      NEWNAME,
-      NEXT,
-      NO,
-      NO_INFOMSGS,
-      NO_QUERYSTORE,
-      NO_STATISTICS,
-      NO_TRUNCATE,
-      NO_WAIT,
-      NOCOUNT,
-      NODES,
-      NOEXEC,
-      NOEXPAND,
-      NOINDEX,
-      NOLOCK,
-      NON_TRANSACTED_ACCESS,
-      NORECOMPUTE,
-      NORECOVERY,
-      NOTIFICATIONS,
-      NOWAIT,
-      NTILE,
-      NULL_DOUBLE_QUOTE,
-      NUMANODE,
-      NUMBER,
-      NUMERIC_ROUNDABORT,
-      OBJECT,
-      OBJECT_DEFINITION,
-      OBJECT_ID,
-      OBJECT_NAME,
-      OBJECT_SCHEMA_NAME,
-      OBJECTPROPERTY,
-      OBJECTPROPERTYEX,
-      OFFLINE,
-      OFFSET,
-      OLD_ACCOUNT,
-      ONLINE,
-      ONLY,
-      OPEN_EXISTING,
-      OPENJSON,
-      OPTIMISTIC,
-      OPTIMIZE,
-      OPTIMIZE_FOR_SEQUENTIAL_KEY,
-      ORIGINAL_DB_NAME,
-      ORIGINAL_LOGIN,
-      OUT,
-      OUTPUT,
-      OVERRIDE,
-      OWNER,
-      OWNERSHIP,
-      PAD_INDEX,
-      PAGE_VERIFY,
-      PAGECOUNT,
-      PAGLOCK,
-      PARAMETERIZATION,
-      PARSENAME,
-      PARSEONLY,
-      PARTITION,
-      PARTITIONS,
-      PARTNER,
-      PATH,
-      PATINDEX,
-      PAUSE,
-      PDW_SHOWSPACEUSED,
-      PERCENT_RANK,
-      PERCENTILE_CONT,
-      PERCENTILE_DISC,
-      PERMISSIONS,
-      PERSIST_SAMPLE_PERCENT,
-      PHYSICAL_ONLY,
-      POISON_MESSAGE_HANDLING,
-      POOL,
-      PORT,
-      PRECEDING,
-      PRIMARY_ROLE,
-      PRIOR,
-      PRIORITY,
-      PRIORITY_LEVEL,
-      PRIVATE,
-      PRIVATE_KEY,
-      PRIVILEGES,
-      PROCCACHE,
-      PROCEDURE_NAME,
-      PROPERTY,
-      PROVIDER,
-      PROVIDER_KEY_NAME,
-      PWDCOMPARE,
-      PWDENCRYPT,
-      QUERY,
-      QUERY_SQUARE_BRACKET,
-      QUEUE,
-      QUEUE_DELAY,
-      QUOTED_IDENTIFIER,
-      QUOTENAME,
-      RANDOMIZED,
-      RANGE,
-      RANK,
-      RC2,
-      RC4,
-      RC4_128,
-      READ_COMMITTED_SNAPSHOT,
-      READ_ONLY,
-      READ_ONLY_ROUTING_LIST,
-      READ_WRITE,
-      READCOMMITTED,
-      READCOMMITTEDLOCK,
-      READONLY,
-      READPAST,
-      READUNCOMMITTED,
-      READWRITE,
-      REBUILD,
-      RECEIVE,
-      RECOMPILE,
-      RECOVERY,
-      RECURSIVE_TRIGGERS,
-      RELATIVE,
-      REMOTE,
-      REMOTE_PROC_TRANSACTIONS,
-      REMOTE_SERVICE_NAME,
-      REMOVE,
-      REORGANIZE,
-      REPAIR_ALLOW_DATA_LOSS,
-      REPAIR_FAST,
-      REPAIR_REBUILD,
-      REPEATABLE,
-      REPEATABLEREAD,
-      REPLACE,
-      REPLICA,
-      REPLICATE,
-      REQUEST_MAX_CPU_TIME_SEC,
-      REQUEST_MAX_MEMORY_GRANT_PERCENT,
-      REQUEST_MEMORY_GRANT_TIMEOUT_SEC,
-      REQUIRED_SYNCHRONIZED_SECONDARIES_TO_COMMIT,
-      RESAMPLE,
-      RESERVE_DISK_SPACE,
-      RESOURCE,
-      RESOURCE_MANAGER_LOCATION,
-      RESTRICTED_USER,
-      RESUMABLE,
-      RETENTION,
-      REVERSE,
-      ROBUST,
-      ROOT,
-      ROUTE,
-      ROW,
-      ROW_NUMBER,
-      ROWGUID,
-      ROWLOCK,
-      ROWS,
-      RTRIM,
-      SAMPLE,
-      SCHEMA_ID,
-      SCHEMA_NAME,
-      SCHEMABINDING,
-      SCOPE_IDENTITY,
-      SCOPED,
-      SCROLL,
-      SCROLL_LOCKS,
-      SEARCH,
-      SECONDARY,
-      SECONDARY_ONLY,
-      SECONDARY_ROLE,
-      SECONDS,
-      SECRET,
-      SECURABLES,
-      SECURITY,
-      SECURITY_LOG,
-      SEEDING_MODE,
-      SELF,
-      SEMI_SENSITIVE,
-      SEND,
-      SENT,
-      SEQUENCE,
-      SEQUENCE_NUMBER,
-      SERIALIZABLE,
-      SERVERPROPERTY,
-      SERVICEBROKER,
-      SESSIONPROPERTY,
-      SESSION_TIMEOUT,
-      SETERROR,
-      SHARE,
-      SHARED,
-      SHOWCONTIG,
-      SHOWPLAN,
-      SHOWPLAN_ALL,
-      SHOWPLAN_TEXT,
-      SHOWPLAN_XML,
-      SIGNATURE,
-      SIMPLE,
-      SINGLE_USER,
-      SIZE,
-      SMALLINT,
-      SNAPSHOT,
-      SORT_IN_TEMPDB,
-      SOUNDEX,
-      SPACE_KEYWORD,
-      SPARSE,
-      SPATIAL_WINDOW_MAX_CELLS,
-      SQL_VARIANT_PROPERTY,
-      STANDBY,
-      START_DATE,
-      STATIC,
-      STATISTICS_INCREMENTAL,
-      STATISTICS_NORECOMPUTE,
-      STATS_DATE,
-      STATS_STREAM,
-      STATUS,
-      STATUSONLY,
-      STDEV,
-      STDEVP,
-      STOPLIST,
-      STR,
-      STRING_AGG,
-      STRING_ESCAPE,
-      STUFF,
-      SUBJECT,
-      SUBSCRIBE,
-      SUBSCRIPTION,
-      SUBSTRING,
-      SUM,
-      SUSER_ID,
-      SUSER_NAME,
-      SUSER_SID,
-      SUSER_SNAME,
-      SUSPEND,
-      SYMMETRIC,
-      SYNCHRONOUS_COMMIT,
-      SYNONYM,
-      SYSTEM,
-      TABLERESULTS,
-      TABLOCK,
-      TABLOCKX,
-      TAKE,
-      TARGET_RECOVERY_TIME,
-      TB,
-      TEXTIMAGE_ON,
-      THROW,
-      TIES,
-      TIME,
-      TIMEOUT,
-      TIMER,
-      TINYINT,
-      TORN_PAGE_DETECTION,
-      TRACKING,
-      TRANSACTION_ID,
-      TRANSFORM_NOISE_WORDS,
-      TRANSLATE,
-      TRIM,
-      TRIPLE_DES,
-      TRIPLE_DES_3KEY,
-      TRUSTWORTHY,
-      TRY,
-      TSQL,
-      TWO_DIGIT_YEAR_CUTOFF,
-      TYPE,
-      TYPE_ID,
-      TYPE_NAME,
-      TYPE_WARNING,
-      TYPEPROPERTY,
-      UNBOUNDED,
-      UNCOMMITTED,
-      UNICODE,
-      UNKNOWN,
-      UNLIMITED,
-      UNMASK,
-      UOW,
-      UPDLOCK,
-      UPPER,
-      USER_ID,
-      USER_NAME,
-      USING,
-      VALID_XML,
-      VALIDATION,
-      VALUE,
-      VALUE_SQUARE_BRACKET,
-      VAR,
-      VARBINARY_KEYWORD,
-      VARP,
-      VERIFY_CLONEDB,
-      VERSION,
-      VIEW_METADATA,
-      VIEWS,
-      WAIT,
-      WELL_FORMED_XML,
-      WITHOUT_ARRAY_WRAPPER,
-      WORK,
-      WORKLOAD,
-      XLOCK,
-      XML,
-      XML_COMPRESSION,
-      XMLDATA,
-      XMLNAMESPACES,
-      XMLSCHEMA,
-      XSINIL,
-      ZONE,
-      // More keywords that can also be used as IDs
-      ABORT_AFTER_WAIT,
-      ABSENT,
-      ADMINISTER,
-      AES,
-      ALLOW_CONNECTIONS,
-      ALLOW_MULTIPLE_EVENT_LOSS,
-      ALLOW_SINGLE_EVENT_LOSS,
-      ANONYMOUS,
-      APPEND,
-      APPLICATION,
-      ASYMMETRIC,
-      ASYNCHRONOUS_COMMIT,
-      AUTHENTICATE,
-      AUTHENTICATION,
-      AUTOMATED_BACKUP_PREFERENCE,
-      AUTOMATIC,
-      AVAILABILITY_MODE,
-      BEFORE,
-      BLOCK,
-      BLOCKERS,
-      BLOCKSIZE,
-      BLOCKING_HIERARCHY,
-      BUFFER,
-      BUFFERCOUNT,
-      CACHE,
-      CALLED,
-      CERTIFICATE,
-      CHANGETABLE,
-      CHANGES,
-      CHECK_POLICY,
-      CHECK_EXPIRATION,
-      CLASSIFIER_FUNCTION,
-      CLUSTER,
-      COMPRESS,
-      COMPRESSION,
-      CONNECT,
-      CONNECTION,
-      CONFIGURATION,
-      CONNECTIONPROPERTY,
-      CONTAINMENT,
-      CONTEXT,
-      CONTEXT_INFO,
-      CONTINUE_AFTER_ERROR,
-      CONTRACT,
-      CONTRACT_NAME,
-      CONVERSATION,
-      COPY_ONLY,
-      CURRENT_REQUEST_ID,
-      CURRENT_TRANSACTION_ID,
-      CYCLE,
-      DATA_COMPRESSION,
-      DATA_SOURCE,
-      DATABASE_MIRRORING,
-      DATASPACE,
-      DDL,
-      DECOMPRESS,
-      DEFAULT_DATABASE,
-      DEFAULT_SCHEMA,
-      DIAGNOSTICS,
-      DIFFERENTIAL,
-      DISTRIBUTION,
-      DTC_SUPPORT,
-      ENABLED,
-      ENDPOINT,
-      ERROR,
-      ERROR_LINE,
-      ERROR_MESSAGE,
-      ERROR_NUMBER,
-      ERROR_PROCEDURE,
-      ERROR_SEVERITY,
-      ERROR_STATE,
-      EVENT,
-      EVENTDATA,
-      EVENT_RETENTION_MODE,
-      EXECUTABLE_FILE,
-      EXPIREDATE,
-      EXTENSION,
-      EXTERNAL_ACCESS,
-      FAILOVER,
-      FAILURECONDITIONLEVEL,
-      FAN_IN,
-      FILE_SNAPSHOT,
-      FORCESEEK,
-      FORCE_SERVICE_ALLOW_DATA_LOSS,
-      FORMATMESSAGE,
-      GET,
-      GET_FILESTREAM_TRANSACTION_CONTEXT,
-      GETANCESTOR,
-      GETANSINULL,
-      GETDESCENDANT,
-      GETLEVEL,
-      GETREPARENTEDVALUE,
-      GETROOT,
-      GOVERNOR,
-      HASHED,
-      HEALTHCHECKTIMEOUT,
-      HEAP,
-      HIERARCHYID,
-      HOST_ID,
-      HOST_NAME,
-      IIF,
-      IO,
-      INCLUDE,
-      INCREMENT,
-      INFINITE,
-      INIT,
-      INSTEAD,
-      ISDESCENDANTOF,
-      ISNULL,
-      ISNUMERIC,
-      KERBEROS,
-      KEY_PATH,
-      KEY_STORE_PROVIDER_NAME,
-      LANGUAGE,
-      LIBRARY,
-      LIFETIME,
-      LINKED,
-      LINUX,
-      LISTENER_IP,
-      LISTENER_PORT,
-      LOCAL_SERVICE_NAME,
-      LOG,
-      MASK,
-      MATCHED,
-      MASTER,
-      MAX_MEMORY,
-      MAXTRANSFER,
-      MAXVALUE,
-      MAX_DISPATCH_LATENCY,
-      MAX_DURATION,
-      MAX_EVENT_SIZE,
-      MAX_SIZE,
-      MAX_OUTSTANDING_IO_PER_VOLUME,
-      MEDIADESCRIPTION,
-      MEDIANAME,
-      MEMBER,
-      MEMORY_PARTITION_MODE,
-      MESSAGE_FORWARDING,
-      MESSAGE_FORWARD_SIZE,
-      MINVALUE,
-      MIRROR,
-      MUST_CHANGE,
-      NEWID,
-      NEWSEQUENTIALID,
-      NOFORMAT,
-      NOINIT,
-      NONE,
-      NOREWIND,
-      NOSKIP,
-      NOUNLOAD,
-      NO_CHECKSUM,
-      NO_COMPRESSION,
-      NO_EVENT_LOSS,
-      NOTIFICATION,
-      NTLM,
-      OLD_PASSWORD,
-      ON_FAILURE,
-      OPERATIONS,
-      PAGE,
-      PARAM_NODE,
-      PARTIAL,
-      PASSWORD,
-      PERMISSION_SET,
-      PER_CPU,
-      PER_DB,
-      PER_NODE,
-      PERSISTED,
-      PLATFORM,
-      POLICY,
-      PREDICATE,
-      PROCESS,
-      PROFILE,
-      PYTHON,
-      R,
-      READ_WRITE_FILEGROUPS,
-      REGENERATE,
-      RELATED_CONVERSATION,
-      RELATED_CONVERSATION_GROUP,
-      REQUIRED,
-      RESET,
-      RESOURCES,
-      RESTART,
-      RESUME,
-      RETAINDAYS,
-      RETURNS,
-      REWIND,
-      ROLE,
-      ROUND_ROBIN,
-      ROWCOUNT_BIG,
-      RSA_512,
-      RSA_1024,
-      RSA_2048,
-      RSA_3072,
-      RSA_4096,
-      SAFETY,
-      SAFE,
-      SCHEDULER,
-      SCHEME,
-      SCRIPT,
-      SERVER,
-      SERVICE,
-      SERVICE_BROKER,
-      SERVICE_NAME,
-      SESSION,
-      SESSION_CONTEXT,
-      SETTINGS,
-      SHRINKLOG,
-      SID,
-      SKIP_KEYWORD,
-      SOFTNUMA,
-      SOURCE,
-      SPECIFICATION,
-      SPLIT,
-      SQL,
-      SQLDUMPERFLAGS,
-      SQLDUMPERPATH,
-      SQLDUMPERTIMEOUT,
-      STATE,
-      STATS,
-      START,
-      STARTED,
-      STARTUP_STATE,
-      STOP,
-      STOPPED,
-      STOP_ON_ERROR,
-      SUPPORTED,
-      SWITCH,
-      TAPE,
-      TARGET,
-      TCP,
-      TOSTRING,
-      TRACE,
-      TRACK_CAUSALITY,
-      TRANSFER,
-      UNCHECKED,
-      UNLOCK,
-      UNSAFE,
-      URL,
-      USED,
-      VERBOSELOGGING,
-      VISIBILITY,
-      WAIT_AT_LOW_PRIORITY,
-      WINDOWS,
-      WITHOUT,
-      WITNESS,
-      XACT_ABORT,
-      XACT_STATE,
-      //
-      ABS,
-      ACOS,
-      ASIN,
-      ATAN,
-      ATN2,
-      CEILING,
-      COS,
-      COT,
-      DEGREES,
-      EXP,
-      FLOOR,
-      LOG10,
-      PI,
-      POWER,
-      RADIANS,
-      RAND,
-      ROUND,
-      SIGN,
-      SIN,
-      SQRT,
-      SQUARE,
-      TAN,
-      //
-      CURRENT_TIMEZONE,
-      CURRENT_TIMEZONE_ID,
-      DATE_BUCKET,
-      DATEDIFF_BIG,
-      DATEFROMPARTS,
-      DATETIME2FROMPARTS,
-      DATETIMEFROMPARTS,
-      DATETIMEOFFSETFROMPARTS,
-      DATETRUNC,
-      DAY,
-      EOMONTH,
-      ISDATE,
-      MONTH,
-      SMALLDATETIMEFROMPARTS,
-      SWITCHOFFSET,
-      SYSDATETIME,
-      SYSDATETIMEOFFSET,
-      SYSUTCDATETIME,
-      TIMEFROMPARTS,
-      TODATETIMEOFFSET,
-      YEAR,
-      //
-      QUARTER,
-      DAYOFYEAR,
-      WEEK,
-      HOUR,
-      MINUTE,
-      SECOND,
-      MILLISECOND,
-      MICROSECOND,
-      NANOSECOND,
-      TZOFFSET,
-      ISO_WEEK,
-      WEEKDAY,
-      //
-      YEAR_ABBR,
-      QUARTER_ABBR,
-      MONTH_ABBR,
-      DAYOFYEAR_ABBR,
-      DAY_ABBR,
-      WEEK_ABBR,
-      HOUR_ABBR,
-      MINUTE_ABBR,
-      SECOND_ABBR,
-      MILLISECOND_ABBR,
-      MICROSECOND_ABBR,
-      NANOSECOND_ABBR,
-      TZOFFSET_ABBR,
-      ISO_WEEK_ABBR,
-      WEEKDAY_ABBR,
-      //
-      SP_EXECUTESQL,
-      // Built-ins
-      VARCHAR,
-      NVARCHAR,
-      PRECISION, // https://github.com/antlr/grammars-v4/blob/master/sql/tsql/TSqlParser.g4#L6257
-      FILESTREAM_ON,
-    ),
+  // https://msdn.microsoft.com/en-us/library/ms175874.aspx
+id_: $ => choice(
+  ID,
+  TEMP_ID,
+  DOUBLE_QUOTE_ID,
+  DOUBLE_QUOTE_BLANK,
+  SQUARE_BRACKET_ID,
+  $.keyword,
+  RAW,
+),
 
-    // https://msdn.microsoft.com/en-us/library/ms175874.aspx
-    id_: $ => choice(
-      ID,
-      TEMP_ID,
-      DOUBLE_QUOTE_ID,
-      DOUBLE_QUOTE_BLANK,
-      SQUARE_BRACKET_ID,
-      $.keyword,
-      RAW,
-    ),
+  simple_id: $ => ID,
 
-    simple_id: $ => ID,
+  id_or_string: $ => choice($.id_, STRING),
 
-    id_or_string: $ => choice($.id_, STRING),
+  // https://msdn.microsoft.com/en-us/library/ms188074.aspx
+// Spaces are allowed for comparison operators.
+  comparison_operator: $ => choice(
+    '=',
+    '>',
+    '<',
+    '<=',
+    '>=',
+    '<>',
+    '!=',
+    '!>',
+    '!<'
+  ),
 
-    // https://msdn.microsoft.com/en-us/library/ms188074.aspx
-    // Spaces are allowed for comparison operators.
-    comparison_operator: $ => choice(
-      '=',
-      '>',
-      '<',
-      '<=',
-      '>=',
-      '<>',
-      '!=',
-      '!>',
-      '!<'
-    ),
+  assignment_operator: $ => choice(
+    '+=',
+    '-=',
+    '*=',
+    '/=',
+    '%=',
+    '&=',
+    '^=',
+    '|='
+  ),
 
-    assignment_operator: $ => choice(
-      '+=',
-      '-=',
-      '*=',
-      '/=',
-      '%=',
-      '&=',
-      '^=',
-      '|='
-    ),
-
-    file_size: $ => seq(
-      DECIMAL,
-      optional(choice(KB, MB, GB, TB, "%"))
-    )
+  file_size: $ => seq(
+    DECIMAL,
+    optional(choice(KB, MB, GB, TB, "%"))
+  )
 }
