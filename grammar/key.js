@@ -148,7 +148,7 @@ module.exports = {
       FILE,
       EQUAL,
       field("path_to_file", STRING),
-      optional(seq(WITH, PRIVATE, KEY, '(', $.private_key_options, ')'),)
+      optional(seq(WITH, PRIVATE, KEY, '(', $.private_key_options, ')'))
     ),
   ),
 
@@ -156,7 +156,7 @@ module.exports = {
     choice(seq(FILE, BINARY)),
     '=',
     field("path", STRING),
-    optional(seq(',', choice(seq(DECRYPTION, ENCRYPTION)), BY, PASSWORD, '=', field("password", STRING))),
+    optional(seq(',', choice(DECRYPTION, ENCRYPTION), BY, PASSWORD, '=', field("password", STRING))),
   ),
 
   generate_new_keys: $ => seq(
@@ -168,7 +168,7 @@ module.exports = {
     repeat(seq(',', $.date_options))
   ),
 
-  date_options: _ => seq(choice(seq(START_DATE, EXPIRY_DATE),), EQUAL, STRING),
+  date_options: _ => seq(choice(START_DATE, EXPIRY_DATE), EQUAL, STRING),
 
   open_key: $ => choice(
     seq(OPEN, SYMMETRIC, KEY, field("key_name", $.id_), DECRYPTION, BY, $.decryption_mechanism),
@@ -183,9 +183,16 @@ module.exports = {
 
   create_key: $ => choice(
     seq(CREATE, MASTER, KEY, ENCRYPTION, BY, PASSWORD, '=', field("password", STRING)),
-    seq(CREATE, SYMMETRIC, KEY, field("key_name", $.id_), optional(seq(AUTHORIZATION, field("user_name", $.id_))), optional(
-      seq(FROM, PROVIDER, field("provider_name", $.id_))
-    ), WITH, repeat1(seq(choice(seq($.key_options, ENCRYPTION, BY, $.encryption_mechanism),), optional(',')))),
+    seq(
+      CREATE,
+      SYMMETRIC,
+      KEY,
+      field("key_name", $.id_),
+      optional(seq(AUTHORIZATION, field("user_name", $.id_))),
+      optional(seq(FROM, PROVIDER, field("provider_name", $.id_))),
+      WITH,
+      repeat1(seq(choice(seq($.key_options, ENCRYPTION, BY, $.encryption_mechanism)), optional(',')))
+    ),
   ),
 
   key_options: $ => choice(
@@ -193,7 +200,7 @@ module.exports = {
     seq(ALGORITHM, EQUAL, $.algorithm),
     seq(IDENTITY_VALUE, EQUAL, field("identity_phrase", STRING)),
     seq(PROVIDER_KEY_NAME, EQUAL, field("key_name_in_provider", STRING)),
-    seq(CREATION_DISPOSITION, EQUAL, choice(seq(CREATE_NEW, OPEN_EXISTING),)),
+    seq(CREATION_DISPOSITION, EQUAL, choice(seq(CREATE_NEW, OPEN_EXISTING))),
   ),
 
   algorithm: _ => choice(
@@ -217,8 +224,8 @@ module.exports = {
   ),
 
   decryption_mechanism: $ => choice(
-    seq(CERTIFICATE, field("certificate_name", $.id_), optional(seq(WITH, PASSWORD, EQUAL, STRING),)),
-    seq(ASYMMETRIC, KEY, field("asym_key_name", $.id_), optional(seq(WITH, PASSWORD, EQUAL, STRING),)),
+    seq(CERTIFICATE, field("certificate_name", $.id_), optional(seq(WITH, PASSWORD, EQUAL, STRING))),
+    seq(ASYMMETRIC, KEY, field("asym_key_name", $.id_), optional(seq(WITH, PASSWORD, EQUAL, STRING))),
     seq(SYMMETRIC, KEY, field("decrypting_Key_name", $.id_)),
     seq(PASSWORD, EQUAL, STRING),
   ),
@@ -228,7 +235,7 @@ module.exports = {
   // FROM sys.fn_builtin_permissions (DEFAULT)
   // ORDER BY 1
   grant_permission: $ => choice(
-    seq(ADMINISTER, optional(seq(ALL, USER, SECURABLES),)2),
+    seq(ADMINISTER, choice(seq(BULK, OPERATIONS), seq(DATABASE, BULK, OPERATIONS))),
     seq(ALTER, optional(choice(
       seq(ANY, choice(
         seq(APPLICATION, ROLE),
@@ -236,20 +243,22 @@ module.exports = {
         seq(ASYMMETRIC, KEY),
         seq(AVAILABILITY, GROUP),
         CERTIFICATE,
-        seq(COLUMN, (, ENCRYPTION, KEY, MASTER, KEY)),
+        seq(COLUMN, choice(seq(ENCRYPTION, KEY), seq(MASTER, KEY))),
         CONNECTION,
         CONTRACT,
         CREDENTIAL,
-        seq(DATABASE, (),
-          AUDIT,
-          seq(DDL, TRIGGER),
-          seq(EVENT, (, NOTIFICATION, SESSION)),
-          seq(SCOPED, CONFIGURATION)
-        ),?,
+        seq(DATABASE,
+          optional(choice(
+            AUDIT,
+            seq(DDL, TRIGGER),
+            seq(EVENT, choice(NOTIFICATION, SESSION)),
+            seq(SCOPED, CONFIGURATION)
+          ))
+        ),
         DATASPACE,
         ENDPOINT,
-        seq(EVENT, (, NOTIFICATION, SESSION)),
-        seq(EXTERNAL, (, DATA, SOURCE, FILE, FORMAT, LIBRARY)),
+        seq(EVENT, choice(NOTIFICATION, SESSION)),
+        seq(EXTERNAL, choice(seq(DATA, SOURCE), seq(FILE, FORMAT), LIBRARY)),
         seq(FULLTEXT, CATALOG),
         seq(LINKED, SERVER),
         LOGIN,
@@ -260,21 +269,21 @@ module.exports = {
         ROUTE,
         SCHEMA,
         seq(SECURITY, POLICY),
-        seq(SERVER, choice(seq(AUDIT, ROLE),)),
+        seq(SERVER, choice(AUDIT, ROLE)),
         SERVICE,
         seq(SYMMETRIC, KEY),
         USE
-      ),),
+      )),
       RESOURCES,
       seq(SERVER, STATE),
       SETTINGS,
-      TRAC
-    ),)),
-    seq(AUTHENTICATE, SERVER?),
-    seq(BACKUP, choice(seq(DATABASE, LOG),)),
+      TRACE
+    ))),
+    seq(AUTHENTICATE, optional(SERVER)),
+    seq(BACKUP, choice(DATABASE, LOG)),
     CHECKPOINT,
-    seq(CONNECT, optional(choice(seq(ANY, DATABASE, REPLICATION, SQL),))),
-    seq(CONTROL, SERVER?),
+    seq(CONNECT, optional(choice(seq(ANY, DATABASE), REPLICATION, SQL))),
+    seq(CONTROL, optional(SERVER)),
     seq(CREATE, choice(
       AGGREGATE,
       seq(ANY, DATABASE),
@@ -283,7 +292,7 @@ module.exports = {
       seq(AVAILABILITY, GROUP),
       CERTIFICATE,
       CONTRACT,
-      seq(DATABASE, optional(seq(DDL, EVENT, NOTIFICATION),)),
+      seq(DATABASE, optional(seq(DDL, EVENT, NOTIFICATION))),
       seq(DDL, EVENT, NOTIFICATION),
       DEFAULT,
       ENDPOINT,
@@ -308,16 +317,16 @@ module.exports = {
       TYPE,
       VIEW,
       seq(XML, SCHEMA, COLLECTION)
-    ),),
+    )),
     DELETE,
-    seq(EXECUTE, optional(seq(ANY, EXTERNAL, SCRIPT),)),
+    seq(EXECUTE, optional(seq(ANY, EXTERNAL, SCRIPT))),
     seq(EXTERNAL, ACCESS, ASSEMBLY),
-    seq(IMPERSONATE, optional(seq(ANY, LOGIN),)),
+    seq(IMPERSONATE, optional(seq(ANY, LOGIN))),
     INSERT,
     seq(KILL, DATABASE, CONNECTION),
     RECEIVE,
     REFERENCES,
-    seq(SELECT, optional(seq(ALL, USER, SECURABLES),)),
+    seq(SELECT, optional(seq(ALL, USER, SECURABLES))),
     SEND,
     SHOWPLAN,
     SHUTDOWN,
@@ -327,11 +336,11 @@ module.exports = {
     seq(UNSAFE, ASSEMBLY),
     UPDATE,
     seq(VIEW, choice(
-      seq(ANY, choice(seq(DATABASE, DEFINITION, COLUMN, choice(seq(ENCRYPTION, MASTER),), KEY, DEFINITION),)),
+      seq(ANY, choice(DATABASE, DEFINITION, COLUMN, choice(ENCRYPTION, MASTER), KEY, DEFINITION)),
       seq(CHANGE, TRACKING),
       seq(DATABASE, STATE),
       DEFINITION,
       seq(SERVER, STATE)
-    ),),
+    )),
   ),
 }
