@@ -180,7 +180,7 @@ module.exports = {
         LISTENER_URL, EQUAL, STRING, COMMA, AVAILABILITY_MODE, EQUAL,
         choice(SYNCHRONOUS_COMMIT, ASYNCHRONOUS_COMMIT),
         COMMA, FAILOVER_MODE, EQUAL, MANUAL, COMMA, SEEDING_MODE, EQUAL, choice(AUTOMATIC, MANUAL), RR_BRACKET
-      ),)
+      ))
     ),
     seq(
       MODIFY, AVAILABILITY, GROUP, ON,
@@ -191,7 +191,7 @@ module.exports = {
         optional(seq(optional(COMMA), FAILOVER_MODE, EQUAL, MANUAL)),
         optional(seq(optional(COMMA), SEEDING_MODE, EQUAL, choice(AUTOMATIC, MANUAL))),
         RR_BRACKET
-      ),)
+      ))
     ),
     seq(GRANT, CREATE, ANY, DATABASE),
     seq(DENY, CREATE, ANY, DATABASE),
@@ -199,14 +199,12 @@ module.exports = {
     FORCE_FAILOVER_ALLOW_DATA_LOSS,
     seq(
       ADD, LISTENER, field("listener_name", STRING), LR_BRACKET,
-      (
-        seq(WITH, DHCP, ON, LR_BRACKET, $.ip_v4_failover, $.ip_v4_failover, RR_BRACKET),
-        seq(
-          WITH, IP, LR_BRACKET,
-          repeat1(seq(optional(COMMA), LR_BRACKET, choice(seq($.ip_v4_failover, COMMA, $.ip_v4_failover), $.ip_v6_failover), RR_BRACKET)),
-          optional(seq(COMMA, PORT, EQUAL, DECIMAL)),
-          RR_BRACKET
-        ),
+      seq(WITH, DHCP, ON, LR_BRACKET, $.ip_v4_failover, $.ip_v4_failover, RR_BRACKET),
+      seq(
+        WITH, IP, LR_BRACKET,
+        repeat1(seq(optional(COMMA), LR_BRACKET, choice(seq($.ip_v4_failover, COMMA, $.ip_v4_failover), $.ip_v6_failover), RR_BRACKET)),
+        optional(seq(COMMA, PORT, EQUAL, DECIMAL)),
+        RR_BRACKET
       ),
       RR_BRACKET
     ),
