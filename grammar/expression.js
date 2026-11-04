@@ -1372,58 +1372,13 @@ module.exports = {
     $.expression_ele,
   ),
 
-  table_sources: $ => choice(
-    $.non_ansi_join,
-    seq($.source, +=, table_$.source, repeat(seq(',', $.source, +=, table_$.source),)),
-  ),
-
   // sqlenlight.com/support/help/sa0006/
   // stale link
   non_ansi_join: $ => (
     seq($.source, +=, table_$.source, repeat1(seq(',', $.source, +=, table_$.source),)),
   ),
 
-  // https://docs.microsoft.com/en-us/sql/t-sql/queries/from-transact-sql
-  table_source: $ => (
-    seq($.table_source_item, $.joins, +=, repeat($.join_part)),
-  ),
 
-  table_source_item: $ => choice(
-    seq($.full_table_name, $.deprecated_table_hint, $.as_table_alias),
-    seq($.full_table_name, optional($.as_table_alias), optional(choice(
-      $.with_table_hints,
-      $.deprecated_table_hint,
-      $.sybase_legacy_hint
-    ),)),
-    seq($.rowset_function, optional($.as_table_alias)),
-    seq('(', $.derived_table, ')', (#######,)),
-    seq($.change_table, optional($.as_table_alias)),
-    seq($.nodes_method, (#######,)),
-    seq($.function_call, (#######,)),
-    seq(field("loc_id", LOCAL_ID), optional($.as_table_alias)),
-    seq(field("loc_id_call", LOCAL_ID), '.', field("loc_fcall", $.function_call), (#######,)),
-    $.open_xml,
-    $.open_json,
-    seq(DOUBLE_COLON, field("oldstyle_fcall", $.function_call), optional($.as_table_alias)),
-    seq('(', $.table_source, ')'),
-  ),
-
-  // https://docs.microsoft.com/en-us/sql/t-sql/functions/openxml-transact-sql
-  open_xml: $ => (
-    seq(OPENXML, '(', $.expression, ',', $.expression, optional(seq(',', $.expression),), ')', optional(seq(WITH, '(', $.schema_declaration, ')'),), optional($.as_table_alias)),
-  ),
-
-  open_json: $ => (
-    seq(OPENJSON, '(', $.expression, optional(seq(',', $.expression),), ')', optional(seq(WITH, '(', $.json_declaration, ')'),), optional($.as_table_alias)),
-  ),
-
-  json_declaration: $ => (
-    seq($.json_col, +=, $.$.json_column_declaration, repeat(seq(',', $.json_col, +=, $.$.json_column_declaration),)),
-  ),
-
-  json_column_declaration: $ => (
-    seq($.column_declaration, optional(seq(AS, JSON),)),
-  ),
 
   schema_declaration: $ => (
     seq($.xml_col, +=, $.column_declaration, repeat(seq(',', $.xml_col, +=, $.column_declaration),)),
@@ -1433,18 +1388,6 @@ module.exports = {
     seq($.id_, $.data_type, STRING?),
   ),
 
-  change_table: $ => choice(
-    $.change_table_changes,
-    $.change_table_versio,
-  ),
-
-  change_table_changes: $ => (
-    seq(CHANGETABLE, '(', CHANGES, field("changetable", $.table_name), ',', $.changesid, =, choice(seq(NULL$._, DECIMAL, LOCAL$._ID),), ')'),
-  ),
-
-  change_table_version: $ => (
-    seq(CHANGETABLE, '(', VERSION, field("versiontable", $.table_name), ',', field("pk_columns", $.full_column_name_list), ',', field("pk_values", $.select_list), ')'),
-  ),
 
   // https://msdn.microsoft.com/en-us/library/ms191472.aspx
   join_part
@@ -1553,13 +1496,6 @@ module.exports = {
     ), ',', $.expression, optional(seq(',', LANGUAGE, $.expression),), ')'),
   ),
 
-  json_key_value: $ => (
-    seq(field("json_key_name", $.expression), ':', field("value_expression", $.expression)),
-  ),
-
-  json_null_clause: $ => (
-    seq(choice(seq(ABSENT, NULL$._),), ON, NULL$._),
-  ),
 
   xml_data_type_methods: $ => choice(
     $.value_method,
@@ -1690,22 +1626,6 @@ module.exports = {
     seq(AS?, $.column_alias),
   ),
 
-  as_table_alias: $ => (
-    seq(AS?, $.table_alias),
-  ),
-
-  table_alias: $ => (
-    $.id,
-  ),
-
-  // https://msdn.microsoft.com/en-us/library/ms187373.aspx
-  with_table_hints: $ => (
-    seq(WITH, '(', $.hint, +=, $.table_$.hint, repeat(seq(optional(','), $.hint, +=, $.table_$.hint),), ')'),
-  ),
-
-  deprecated_table_hint: $ => (
-    seq('(', $.table_hint, ')'),
-  ),
 
   // https://infocenter-archive.sybase.com/help/index.optional($.jsp)topic=/com.sybase.infocenter.dc00938.1502/html/locking/locking103.htm
   // https://infocenter-archive.sybase.com/help/index.optional($.jsp)topic=/com.sybase.dc32300_1250/html/sqlug/sqlug792.htm
@@ -1723,40 +1643,6 @@ module.exports = {
     SHARE,
   ),
 
-  // For simplicity, we don't build subsets for INSERT/UPDATE/DELETE/SELECT/MERGE
-  // which means the grammar accept slightly more than the what the specification (documentation) says.
-  table_hint: $ => choice(
-    NOEXPAND,
-    seq(INDEX, choice(
-      seq('(', $.index_value, repeat(seq(',', $.index_value),), ')'),
-      seq('=', '(', $.index_value, ')'),
-      seq('=', $.$.index_value, //, $.examples, $.in, $.the, $.doc, $.$.include, $.this, $.syntax)
-    ),),
-    seq(FORCESEEK, optional(seq('(', $.index_value, '(', $.column_name_list, ')', ')'),)),
-    FORCESCAN,
-    HOLDLOCK,
-    NOLOCK,
-    NOWAIT,
-    PAGLOCK,
-    READCOMMITTED,
-    READCOMMITTEDLOCK,
-    READPAST,
-    READUNCOMMITTED,
-    REPEATABLEREAD,
-    ROWLOCK,
-    SERIALIZABLE,
-    SNAPSHOT,
-    seq(SPATIAL_WINDOW_MAX_CELLS, '=', DECIMAL),
-    TABLOCK,
-    TABLOCKX,
-    UPDLOCK,
-    XLOCK,
-    KEEPIDENTITY,
-    KEEPDEFAULTS,
-    IGNORE_CONSTRAINTS,
-    IGNORE_TRIGGER,
-  ),
-
   index_value: $ => choice(
     $.id_,
     DECIMA,
@@ -1769,10 +1655,6 @@ module.exports = {
   column_alias: $ => choice(
     $.id_,
     STRIN,
-  ),
-
-  table_value_constructor: $ => (
-    seq(VALUES, '(', $.exps, +=, $.expression_list_, ')', repeat(seq(',', '(', $.exps, +=, $.expression_list_, ')'),)),
   ),
 
   expression_list_: $ => (
@@ -1890,22 +1772,6 @@ module.exports = {
   entity_name_for_parallel_dw: $ => choice(
     seq(field("schema_database", $.id_)),
     seq(field("schema", $.id_), '.', field("object_name", $.id_)),
-  ),
-
-  full_table_name: $ => (
-    seq(optional(choice(
-      seq(field("linkedServer", $.id_), '.', '.', field("schema", $.id_), '.'),
-      seq(field("server", $.id_), '.', field("database", $.id_), '.', field("schema", $.id_), '.'),
-      seq(field("database", $.id_), '.', field("schema", optional($.id_)), '.'),
-      seq(field("schema", $.id_), '.')
-    ),), field("table", $.id_)),
-  ),
-
-  table_name: $ => (
-    seq(optional(choice(seq(field("database", $.id_), '.', field("schema", optional($.id_)), '.', field("schema", $.id_), '.'),)), choice(
-      seq(field("table", $.id_)),
-      seq(field("blocking_hierarchy", BLOCKING_HIERARCHY))
-    ),),
   ),
 
   simple_name: $ => (
@@ -3087,67 +2953,6 @@ module.exports = {
 
   // ***************************************************************************************************************
 
-  table_source_item: $ => choice(
-    seq($.full_table_name, $.deprecated_table_hint, $.as_table_alias), // this is currently allowed
-    seq(
-      $.full_table_name,
-      optional($.as_table_alias),
-      optional(choice($.with_table_hints, $.deprecated_table_hint, $.sybase_legacy_hints))
-    ),
-    seq($.rowset_function, optional($.as_table_alias)),
-    seq('(', $.derived_table, ')', optional(seq($.as_table_alias, optional($.column_alias_list)))),
-    seq($.change_table, optional($.as_table_alias)),
-    seq($.nodes_method, optional($.as_table_alias, optional(column_alias_list))),
-    seq($.function_call, optional($.as_table_alias, optional(column_alias_list))),
-    seq(field("loc_id", LOCAL_ID), optional($.as_table_alias)),
-    seq(field("loc_id_call", LOCAL_ID), '.', field("loc_fcall", $.function_call), optional(seq($.as_table_alias, optional($.column_alias_list)))),
-    $.open_xml,
-    $.open_json,
-    seq(DOUBLE_COLON, field("oldstyle_fcall", $.function_call), optional($.as_table_alias)), // Build-in function (old syntax)
-    seq('(', $.table_source, ')'),
-  ),
-
-  open_xml: $ => seq(
-    OPENXML,
-    '(',
-      $.expression,
-      ',',
-      $.expression,
-      optional(seq(',', $.expression)),
-      ')',
-    optional(seq(
-      WITH,
-      '(',
-        $.schema_declaration,
-        ')'
-    )),
-    optional($.as_table_alias)
-  ),
-
-  open_json: $ => seq(
-    OPENJSON,
-    '(',
-      $.expression,
-      optional(seq(',', $.expression)),
-      ')',
-    optional(seq(
-      WITH,
-      '(',
-        $.json_declaration,
-        ')'
-    )),
-    optional($.as_table_alias)
-  ),
-
-  json_declaration: $ => seq(
-    field("json_col", $.json_column_declaration),
-    repeat(seq(',', field("json_col", $.json_column_declaration)))
-  ),
-
-  json_column_declaration: $ => seq(
-    $.column_declaration,
-    optional(seq(AS, JSON))
-  ),
 
   schema_declaration: $ => seq(
     field("xml_col", $.column_declaration),
@@ -3160,56 +2965,6 @@ module.exports = {
     optional(STRING)
   ),
 
-  change_table: $ => choice(
-    $.change_table_changes,
-    $.change_table_version
-  ),
-
-  change_table_changes: $ => seq(
-    CHANGETABLE,
-    '(',
-      CHANGES,
-      field("changetable", $.table_name),
-      ',',
-      field("changesid", choice(NULL_, DECIMAL, LOCAL_ID)),
-      ')'
-  ),
-
-  change_table_version: $ => seq(
-    CHANGETABLE,
-    '(',
-      VERSION,
-      field("versiontable", $.table_name),
-      ',',
-      field("pk_columns", $.full_column_name_list),
-      ',',
-      field("pk_values", $.select_list),
-      ')'
-  ),
-
-  // https://msdn.microsoft.com/en-us/library/ms191472.aspx
-join_part: $ => choice(
-  $.join_on,
-  $.cross_join,
-  $.apply_,
-  $.pivot,
-  $.unpivot
-),
-
-  join_on: $ => seq(
-    optional(choice(
-      field("inner", INNER),
-      seq(
-        field("join_type", choice(LEFT, RIGHT, FULL)),
-        optional(field("outer", OUTER))
-      )
-    )),
-    optional(field("join_hint", choice(LOOP, HASH, MERGE, REMOTE))),
-    JOIN,
-    field("source", $.table_source),
-    ON,
-    field("cond", $.search_condition)
-  ),
 
   cross_join: $ => seq(
     CROSS,
@@ -3399,16 +3154,6 @@ join_part: $ => choice(
     ),
   ),
 
-  json_key_value: $ => seq(
-    field("json_key_name", $.expression),
-    ":",
-    field("value_expression", $.expression),
-  ),
-
-  json_null_clause: $ => seq(
-    choice(ABSENT, NULL_), ON, NULL_
-  ),
-
   xml_data_type_methods: $ => choice(
     $.value_method,
     $.query_method,
@@ -3416,178 +3161,6 @@ join_part: $ => choice(
     $.modify_method
   ),
 
-
-  // https://learn.microsoft.com/en-us/sql/t-sql/functions/date-bucket-transact-sql?view=sql-server-ver16
-dateparts_9: $ => choice(
-  YEAR,
-  YEAR_ABBR,
-  QUARTER,
-  QUARTER_ABBR,
-  MONTH,
-  MONTH_ABBR,
-  DAY,
-  DAY_ABBR,
-  WEEK,
-  WEEK_ABBR,
-  HOUR,
-  HOUR_ABBR,
-  MINUTE,
-  MINUTE_ABBR,
-  SECOND,
-  SECOND_ABBR,
-  MILLISECOND,
-  MILLISECOND_ABBR
-),
-
-  // https://learn.microsoft.com/en-us/sql/t-sql/functions/dateadd-transact-sql?view=sql-server-ver16
-dateparts_12: $ => choice(
-  $.dateparts_9,
-  DAYOFYEAR,
-  DAYOFYEAR_ABBR,
-  MICROSECOND,
-  MICROSECOND_ABBR,
-  NANOSECOND,
-  NANOSECOND_ABBR
-),
-
-  // https://learn.microsoft.com/en-us/sql/t-sql/functions/datename-transact-sql?view=sql-server-ver16
-dateparts_15: $ => choice(
-  $.dateparts_12,
-  WEEKDAY,
-  WEEKDAY_ABBR,
-  TZOFFSET,
-  TZOFFSET_ABBR,
-  ISO_WEEK,
-  ISO_WEEK_ABBR
-),
-
-  // https://learn.microsoft.com/en-us/sql/t-sql/functions/datetrunc-transact-sql?view=sql-server-ver16
-dateparts_datetrunc: $ => choice(
-  $.dateparts_9,
-  DAYOFYEAR,
-  DAYOFYEAR_ABBR,
-  MICROSECOND,
-  MICROSECOND_ABBR,
-  ISO_WEEK,
-  ISO_WEEK_ABBR
-),
-
-  value_method: $ => seq(
-    choice(
-      field("loc_id", LOCAL_ID),
-      field("value_id", $.full_column_name),
-      field("eventdata", seq(EVENTDATA, '(', ')')),
-      field("query", $.query_method),
-      seq('(', $.subquery, ')')
-    ),
-    '.',
-    field("call", $.value_call)
-  ),
-
-  value_call: $ => seq(
-    choice(VALUE, VALUE_SQUARE_BRACKET),
-    '(',
-      field("xquery", STRING),
-      ',',
-      field("sqltype", STRING),
-      ')'
-  ),
-
-  query_method: $ => seq(
-    choice(
-      field("loc_id", LOCAL_ID),
-      field("value_id", $.full_column_name),
-      seq('(', $.subquery, ')')
-    ),
-    '.',
-    field("call", $.query_call)
-  ),
-
-  query_call: $ => seq(
-    choice(QUERY, QUERY_SQUARE_BRACKET),
-    '(',
-      field("xquery", STRING),
-      ')'
-  ),
-
-  exist_method: $ => seq(
-    choice(
-      field("loc_id", LOCAL_ID),
-      field("value_id", $.full_column_name),
-      seq('(', $.subquery, ')')
-    ),
-    '.',
-    field("call", $.exist_call)
-  ),
-
-  exist_call: $ => seq(
-    choice(EXIST, EXIST_SQUARE_BRACKET),
-    '(',
-      field("xquery", STRING),
-      ')'
-  ),
-
-  modify_method: $ => seq(
-    choice(
-      field("loc_id", LOCAL_ID),
-      field("value_id", $.full_column_name),
-      seq('(', $.subquery, ')')
-    ),
-    '.',
-    field("call", $.modify_call)
-  ),
-
-  modify_call: $ => seq(
-    choice(MODIFY, MODIFY_SQUARE_BRACKET),
-    '(',
-      field("xml_dml", STRING),
-      ')'
-  ),
-
-  hierarchyid_call: $ => choice(
-    seq(GETANCESTOR, '(', field("n", $.expression), ')'),
-    seq(
-      GETDESCENDANT,
-      '(',
-        field("child1", $.expression),
-        ',',
-        field("child2", $.expression),
-        ')'
-    ),
-    seq(GETLEVEL, '(', ')'),
-    seq(ISDESCENDANTOF, '(', field("parent_", $.expression), ')'),
-    seq(
-      GETREPARENTEDVALUE,
-      '(',
-        field("oldroot", $.expression),
-        ',',
-        field("newroot", $.expression),
-        ')'
-    ),
-    seq(TOSTRING, '(', ')')
-  ),
-
-  hierarchyid_static_method: $ => seq(
-    HIERARCHYID,
-    DOUBLE_COLON,
-    choice(
-      seq(GETROOT, '(', ')'),
-      seq(PARSE, '(', field("input", $.expression), ')')
-    )
-  ),
-
-  nodes_method: $ => seq(
-    choice(
-      field("loc_id", LOCAL_ID),
-      field("value_id", $.full_column_name),
-      seq('(', $.subquery, ')')
-    ),
-    '.',
-    NODES,
-    '(',
-      field("xquery", STRING),
-      ')'
-  ),
 
   switch_section: $ => seq(
     WHEN,
@@ -3605,20 +3178,6 @@ dateparts_datetrunc: $ => choice(
 
   as_column_alias: $ => seq(optional(AS), $.column_alias),
 
-  table_alias: $ => $.id_,
-
-  with_table_hints: $ => seq(
-    WITH,
-    '(',
-      field("hint", $.table_hint),
-      repeat(seq(
-        optional(','),
-        field("hint", $.table_hint)
-      )),
-      ')'
-  ),
-
-  deprecated_table_hint: $ => seq("(", $.table_hint, ")"),
 
   sybase_legacy_hints: $ => repeat1($.sybase_legacy_hint),
 
@@ -3629,39 +3188,6 @@ dateparts_datetrunc: $ => choice(
     SHARED
   ),
 
-  table_hint: $ => choice(
-    NOEXPAND,
-    seq(
-      INDEX, choice(
-        seq('(', $.index_value, repeat(seq(',' $.index_value)), ')'),
-        seq('=', '(', $.index_value, ')'),
-        seq('=', $.index_value),
-      )
-    ),
-    seq(FORCESEEK, optional(seq('(', $.index_value, '(', $.column_name_list, ')', ')'))),
-    FORCESCAN,
-    HOLDLOCK,
-    NOLOCK,
-    NOWAIT,
-    PAGLOCK,
-    READCOMMITTED,
-    READCOMMITTEDLOCK,
-    READPAST,
-    READUNCOMMITTED,
-    REPEATABLEREAD,
-    ROWLOCK,
-    SERIALIZABLE,
-    SNAPSHOT,
-    seq(SPATIAL_WINDOW_MAX_CELLS, '=', DECIMAL),
-    TABLOCK,
-    TABLOCKX,
-    UPDLOCK,
-    XLOCK,
-    KEEPIDENTITY,
-    KEEPDEFAULTS,
-    IGNORE_CONSTRAINTS,
-    IGNORE_TRIGGERS
-  ),
 
   index_value: $ => choice(
     $.id_,
@@ -3679,12 +3205,6 @@ dateparts_datetrunc: $ => choice(
     STRING
   ),
 
-  table_value_constructor: $ => seq(
-    VALUES,
-    commaSep1(
-      seq('(', field("exps", $.expression_list_), ')')
-    )
-  ),
 
   expression_list_: $ => commaSep1(
     field("exp", $.expression)
@@ -3901,26 +3421,6 @@ analytic_windowed_function: $ => choice(
     seq(field("schema", $.id_), '.', field("object_name", $.id_))
   ),
 
-  full_table_name: $ => seq(
-    optional(choice(
-      seq(field("linkedServer", $.id_), '.', '.', field("schema", $.id_), '.'),
-      seq(field("server", $.id_), '.', field("database", $.id_), '.', field("schema", $.id_), '.'),
-      seq(field("database", $.id_), '.', optional(field("schema", $.id_)), '.'),
-      seq(field("schema", $.id_), '.')
-    )),
-    field("table", $.id_)
-  ),
-
-  table_name: $ => seq(
-    optional(choice(
-      seq(field("database", $.id_), '.', optional(field("schema", $.id_)), '.'),
-      seq(field("schema", $.id_), '.')
-    )),
-    choice(
-      field("table", $.id_),
-      field("blocking_hierarchy", BLOCKING_HIERARCHY)
-    )
-  ),
 
   simple_name: $ => seq(
     optional(seq(field("schema", $.id_), '.')),
