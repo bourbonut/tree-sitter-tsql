@@ -69,4 +69,15 @@ module.exports = {
     ),
     seq(TOSTRING, '(', ')')
   ),
+
+  function_call: $ => choice(
+    $.ranking_windowed_function,
+    $.aggregate_windowed_function,
+    $.analytic_windowed_function,
+    $.built_in_functions,
+    seq($.scalar_function_name, '(', optional($.expression_list_), ')'),
+    $.freetext_function,
+    $.partition_function,
+    $.hierarchyid_static_method,
+  ),
 }
